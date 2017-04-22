@@ -155,36 +155,33 @@ Turn result data:
                          |  This is only a count.  It does not include the location of the
                          |  submarines that activated their sonar.
     -----------------------------------------------------------------------------------------------
-    Detonations          |  The exact location and size (blast radius) of all detonations that
-                         |  occurred this turn.
-                         |  This does not include information about damage caused by those
-                         |  detonations or the source of the detonations.
+    Detonation           |  There will be one of these messages for each detonation that occurred
+                         |  this turn.  It provides the exact location and size (blast radius) of
+                         |  each detonation.
+                         |  This does not include information about damage caused by the
+                         |  detonation or the source of the detonation.
     -----------------------------------------------------------------------------------------------
-    Discovered Objects   |  If you activated any sonar scans in this turn you will recieve a list
-                         |  of the exact coordinates and approximate size of all objects within
-                         |  range of those sonar scans.
+    Discovered Object    |  There will be one of these messages for each object discovered by
+                         |  sonar ping(s) you activated this turn.  It provides the exact location
+                         |  and approximate size of each object within range of your sonar ping(s).
     -----------------------------------------------------------------------------------------------
-    Torpedo Hits         |  If you fired torpedos which scored one or more hits on enemy subs
-                         |  you will receive a list of damage points inflicted on each enemy and
-                         |  which submarines the torpedos were fired from.
-                         |  This will not contain information about damage inflicted via chain
-                         |  reactions.
-                         |  You will not received feedback of this type for torpedos that did not
-                         |  inflict any damage.
+    Torpedo Hit          |  There will be one of these messages for each hit you scored with
+                         |  torpedos this turn.  It provides the location of the torpedo detonation
+                         |  and the amount of damage inflicted.
     -----------------------------------------------------------------------------------------------
-    Mine Hits            |  If you have deployed any mines on this or previous turns you will
-                         |  receive a list of damage points inflicted on enemy subs by those mines
-                         |  if they were detonated this turn.
-                         |  NOTE: Once a mine has been detinated it no longer exists.
+    Mine Hit             |  There will be one of these messages for each hit you scored with mines
+                         |  this turn.  It provides the location of the mine that detonated and the
+                         |  amount of damage inflicted.
+                         |  NOTE: Once a mine has been detonated it no longer exists.
     -----------------------------------------------------------------------------------------------
-    Submarine Status     |  This is a list of info about each of your submarines.  For each of your
-                         |  submarines this list includes the location, damage inflicted, damage
-                         |  taken, amount of excess power accumluated, whether the submarine is
-                         |  surfaced for repairs, and whether the submarine has been destroyed.
+    Submarine Info       |  There will be one of these messages for each of your submarines.
+                         |  It includes the location, damage inflicted, damage taken, amount of
+                         |  excess power accumluated, whether the submarine is surfaced for
+                         |  repairs, and whether the submarine has been destroyed.
     -----------------------------------------------------------------------------------------------
     Error Message        |  If you submitted an unrecognized order or an order that could not be
-                         |  carried out you will receive an error message.  If you submit two
-                         |  consequtive invalid orders you will be removed from the game, and
+                         |  carried out you will receive an error message.
+                         |  If you submit two invalid orders you will be removed from the game and
                          |  given a score of 0.
 
 Invalid Orders
