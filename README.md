@@ -14,12 +14,10 @@ A destroyed submarine cannot score hits on enemy submarines.  So by necessity, k
 
 A game ends when only one player has any remaining submarines or the maximum turn count has been met.  The player that scored the most hits on enemy submarines wins.  The player with the second most hits is the runner up, etc.
 
-NOTE: As is the case with most game settings, the maximum turn count can be customized per game.  
-
 Game Configuration
 ------------------
 
-Every game is configured with a title, a map of a set size, and a list of game settings.  The title, map size, and game settings count are sent to each player as a single message when they connect to the game server.  If the game settings count is greater that zero then that number of game setting messages will be sent immediately after the first message.
+Every game is configured with a title, a map of a fixed size, and a list of game settings.  The title, map size, and the number of customized game settings are sent to each player as a single message when they connect to the game server.  If the number of customized game settings is greater that zero then that number of game setting messages will be sent immediately after the first message.
 
 When a game is created the game server first waits for players to join.  Each player that joins is provided the game configuration (as described above) and in return they each provide their player name and submarine starting positions.  **NOTE:** Games may be configured so that submarine starting positions are pre-set, in which case the players do not provide their own starting positions.
 
@@ -32,13 +30,12 @@ Game Map
 
 The game map is a rectangular grid of squares arranged as `width` columns and `height` rows.  Column and row numbers begin at 0.  In the small map below, square 0|0 is the north-west (top-left) corner and square 4|4 is the south-east (bottom-right) corder.  And starting from square 2|2, one square north is 2|1, one square south is 2|3, one square west is 1|2, and one square east is 3|2.
 
-      Column|X
       0 1 2 3 4
-  R 0 . . . . .
-  o 1 . . N . .
-  w 2 . W * E .
-  - 3 . . S . .
-  Y 4 . . . . .
+    0 . . . . .
+    1 . . N . .
+    2 . W * E .
+    3 . . S . .
+    4 . . . . .
 
 Game Play
 ---------
@@ -54,12 +51,12 @@ When the game is started play proceeds as a series of "turns".  Each turn has 4 
 
 Phase 3 begins when all players have submitted one command for each of their active submarines.  A submarine is active if it hasn't been destroyed and is not surfaced for repairs.  Any player that does not submit one command for each of their active submarines in the alloted time is removed from the game and given a score of 0.
 
-When the game ends the server sends a type `E` (game end) message to all the players and disconnects them.
+After the last turn of the game is completed the server sends a type `F` (game finished) message and one type `P` (player result) message for each player to all the players and disconnects them.  Otherwise a new turn is begun.
 
 Commands
 --------
 
-Only one command may be given per submarine per turn.  Available commands are:
+Players must submit exactly one command per active submarine (owned by them) per turn.  Available commands are:
 
 ### Commands that leave power available for charging:
 
@@ -77,20 +74,24 @@ Only one command may be given per submarine per turn.  Available commands are:
     ===============================================================================================
     Ping     |  Activates sonar to discover the exact location and approximate size of all objects
              |  within sonar range.
-             |  The range of the sonar ping is determined by the amount of charge the sonar has.
+             |  The range of the sonar ping is determined by the amount of charge it has when it
+             |  is activated.
     -----------------------------------------------------------------------------------------------
-    Fire     |  Fires a single torpedo to a specified coordinates.  It will detonate when it
-             |  reaches the destination coordinates.
-             |  The range of the torpedo is determined by the amount of charge the torpedo has.
-             |  If the target coordinates are out of the torpedo range the torpedo does not
-             |  detonate.
+    Fire     |  Fires a single torpedo to specified coordinates.  The torpedo will detonate when
+             |  it reaches the specified coordinates.
+             |  The range of the torpedo is determined by the amount of charge it has when it is
+             |  fired.  If the specified coordinates are out of the torpedo range the torpedo does
+             |  not detonate.
     -----------------------------------------------------------------------------------------------
-    Mine     |  Deploy a single stationary mine in a square north, east, south, or west of the
-             |  submarine.  The mine must be fully charged for a successful deploy.
+    Mine     |  Deploy a single stationary mine in the square immediately north, east, south, or
+             |  west of the submarine.
+             |  The mine must be fully charged for a successful deploy.
+             |  If the mine is not fully charged it will sink to the bottom of the ocean (in
+             |  essence, it disappears and will never detonate).
     -----------------------------------------------------------------------------------------------
     Sprint   |  The submarine is moved 2 or more squares north, east, south, or west in a straight
              |  line.  The maximum number of squares the submarine can move is determined by the
-             |  amount of charge the sprint engine has.
+             |  amount of charge the sprint engine has when it is activated.
              |
              |  The sprint engine makes a lot of noise noise!  Your enemies will know when you use
              |  it, but they cannot determine the direction or the distance of the sprint.
@@ -98,7 +99,7 @@ Only one command may be given per submarine per turn.  Available commands are:
              |  Sprinting puts excess strain on your nuclear reactor.  If the number of squares
              |  you attempt to sprint plus the number of damage points your reactor has taken is
              |  greater or equal to the maximum damage your reactor can take, the reactor will
-             |  detonate.  See the Nuclear Reactor Detonation section below.
+             |  detonate (See the "Nuclear Reactor Detonation" section below).
     -----------------------------------------------------------------------------------------------
     Surface  |  Remain at the same square for 3 successive turns to repair 1 shield.
              |  You cannot submit any commands while surfaced and no equipment is charged while
@@ -120,9 +121,9 @@ The maximum units of charge and the effectiveness of the charge per equipment it
 
     Equipment  |  Maximum Charge  |  Effectiveness of Charge Units
     ===============================================================================================
-    Sonar      |  12 units        |  range = charge units + 1
+    Sonar      |  100 units       |  range = charge units + 1
     -----------------------------------------------------------------------------------------------
-    Torpedo    |  10 units        |  range = charge units - 1
+    Torpedo    |  100 units       |  range = charge units - 1
     -----------------------------------------------------------------------------------------------
     Mine       |  3 units         |  active if charge units = maximum charge
     -----------------------------------------------------------------------------------------------
@@ -153,6 +154,8 @@ Torpedo and mine detonations have a blast radius of 1.  Any objects occupying a 
 ### Nuclear Reactor Detonation
 
 If you do not charge or activate equipment in a turn, or you try to charge equipment that has already been charged to its maximum amount, the excess power causes damage to the nuclear reactor of the submarine.  If the amount of damage becomes greater or equal to the maximum damage the reactor core can take it causes a nuclear detonation.  This instantly destroys your submarine and any other objects occupying the same square at the time of detonation.
+
+NOTE: Damage inflicted on enemy submarines via nuclear detonation is *not* added to your score.  There may be strategic reasons to use nuclear detonation, but as a game mechanic it is primarily intended to discourage inactivity.  If you do not make use of your submarine, or use it very ineffectively (such as overcharging a single equipment item), it will eventually self destruct.
 
 Nuclear detonations have a blast radius of 2.  Any objects within a blast radius of 1 from a nuclear detonation suffer the same damage as a direct hit from a torpedo or mine.  Any objects within a blast radius of 2 from a nuclear detonation suffer the same damage as an indirect hit from a torpedo or mine.  
 
@@ -207,36 +210,45 @@ These results are sent only to the player the information is intended for.
     Data                 |  Description
     ===============================================================================================
     Discovered Object    |  There will be one of these messages for each object discovered by
-                         |  sonar ping(s) you activated this turn.  It provides the exact location
-                         |  and approximate size of each object within range of your sonar ping(s).
+                         |  sonar pings you activated this turn.  It provides the exact location
+                         |  and approximate size of each object within range of your sonar pings.
     -----------------------------------------------------------------------------------------------
-    Torpedo Hit          |  There will be one of these messages for each hit you scored with
-                         |  torpedos this turn.  It provides the location of the torpedo detonation
-                         |  and the total amount of damage inflicted (does not include damage
-                         |  inflicted from chain reaction detonations).
+    Torpedo Hit          |  There will be one of these messages for each torpedo detonation you
+                         |  fired this turn that inflicts one or more points of damage on enemies.
+                         |  It provides the location of the torpedo detonation and the total amount
+                         |  of damage inflicted.
+                         |  It does not include damage inflicted from chain reaction detonations.
     -----------------------------------------------------------------------------------------------
-    Mine Hit             |  There will be one of these messages for each hit you scored with mines
-                         |  this turn.  It provides the location of the mine that detonated and the
-                         |  total amount of damage inflicted (does not include damage inflicted
-                         |  from chain reaction detonations).
-                         |  NOTE: Once a mine has been detonated it no longer exists.
+    Mine Hit             |  There will be one of these messages for each mine you have deployed
+                         |  that was detonated this turn and inflicted one or more points of damage
+                         |  on enemies.
+                         |  It provides the location of the mine that detonated and the total
+                         |  amount of damage inflicted.
+                         |  It does not include damage inflicted from chain reaction detonations.
     -----------------------------------------------------------------------------------------------
     Submarine Info       |  There will be one of these messages for each of your submarines.
-                         |  It includes the location, shields remaining, damage inflicted, nuclear
-                         |  reactor damage, whether the submarine is surfaced for repairs, and
-                         |  whether the submarine has been destroyed.
+                         |  It includes the location, shields remaining, nuclear reactor damage,
+                         |  whether the submarine is surfaced for repairs, and whether the
+                         |  submarine has been destroyed.
     -----------------------------------------------------------------------------------------------
-    Error Message        |  If you submitted an unrecognized command or a command that could not be
-                         |  executed you will receive an error message.
-                         |  If you submit two invalid commands you will be removed from the game
-                         |  and given a score of 0.
+    Player Score         |  Includes your current score (the total number of damage points you have
+                         |  inflicted on enemy submarines throughout the game so far).
+    -----------------------------------------------------------------------------------------------
+    Error Message        |  You will receive one error message for each illegal or invalid
+                         |  command you submitted this turn.
+                         |  NOTE: If you generate two or more error messages throughout the course
+                         |  of the game you will be removed from the game and given a score of 0.
 
-Invalid Commands
-----------------
+Ineffective, Illegal, and Invalid Commands
+------------------------------------------
 
-All the consequences of issuing a command take effect even if the command does not make sense.  For example, if you submit a command to fire a torpedo but you have not sufficiently charged the torpedo, it is fired but it is inert and you start with a new, uncharged torpedo.  In short you just wasted a torpedo (in some game configurations you may have a limited number of torpedos).  Another example: If you fire a torpedo at coordinates beyond the range of the torpedo (which is based on how much the torpedo has been charged) it will not reach its destination, will not detonate, and you've wasted a torpedo.  The same thing applies to mines; if they are not fully charged you can still deploy them, but they are inert and you've wasted a mine.
+An ineffective command is a legal command that doesn't do anything effective.  All the consequences of issuing an ineffective command take effect.  For example, if you submit a command to fire a torpedo that is not charged or insufficiently charged to reach its destination the torpedo is still fired but it will not detonate, so you just wasted a torpedo (in some game configurations you may have a limited number of torpedos).  The same thing applies to mines; if they are not fully charged you can still deploy them, but they are inert and you've wasted a mine.  You do not receive an error message for ineffective commands, but you will not be able to score points by submitting ineffective commands.
 
-If you submit a command that is unrecognized or malformed, you waste a turn and get an error message in the turn results phase.  If you submit a command that is correctly formed but cannot be fulfilled, such as attempting to move beyond the edge of the game map, you waste a turn and get an error message in the turn results stage.  Generate two error messages and you will be removed from the game and given a score of 0.
+An illegal command is one that is recognized and correctly formed but cannot be executed.  Such as attempting to move beyond the edge of the game map, attempting to charge an unknown or un-chargeable equipment item, or moving in an unknown direction.  You will receive one error message for every illegal command you submit.
+
+Invalid commands are commands that are unrecognized or malformed.  You will receive one error message for every invalid command you submit.
+
+NOTE: If you generate two or more error messages throughout the course of the game you will be removed from the game and given a score of 0.
 
 Communication Protocol
 ----------------------
