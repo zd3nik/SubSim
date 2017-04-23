@@ -27,6 +27,19 @@ See the [Communication Protocol Reference](protocol.md) for complete details abo
 
 See the [Game Settings Reference](settings.md) for a list of available game settings and their descriptions.
 
+Game Map
+--------
+
+The game map is a rectangular grid of squares arranged as `width` columns and `height` rows.  Column and row numbers begin at 0.  In the small map below, square 0|0 is the north-west (top-left) corner and square 4|4 is the south-east (bottom-right) corder.  And starting from square 2|2, one square north is 2|1, one square south is 2|3, one square west is 1|2, and one square east is 3|2.
+
+      Column|X
+      0 1 2 3 4
+  R 0 . . . . .
+  o 1 . . N . .
+  w 2 . W * E .
+  - 3 . . S . .
+  Y 4 . . . . .
+
 Game Play
 ---------
 

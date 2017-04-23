@@ -173,6 +173,8 @@ More info:
     Mine Hit            |  M|X|Y|damage
     Submarine Info      |  I|id|X|Y|score|damage|excess|surf|dead
     Error Message       |  E|message
+    Game Finished       |  F|turn_count
+    Player Result       |  P|id|score|turn_count|message
 
 More info:
 
@@ -300,6 +302,28 @@ More info:
                       |  Fields:
                       |
                       |    message = The error message
+    ------------------|---------------------------------------------------------------------------
+    F|turns           |  This message is sent to all players when the game is finished.
+                      |
+                      |  Fields:
+                      |
+                      |    turns   = The number of turns executed in the game.
+    ------------------|---------------------------------------------------------------------------
+    P|id|score|       |  For each player that joined the game one of these messages is sent to
+      turns|message   |  all remaining players at the end of the game.
+                      |
+                      |  Fields:
+                      |
+                      |    id      = The ID of the player.
+                      |              Player IDs start at 0.
+                      |    score   = The number of hits this player scored during the game.
+                      |    turns   = The number of turns the player participated in.
+                      |    message = An optional message to provide exceptional details.
+                      |              Will usually not be present unless the player disconnected
+                      |              or was disqualified.
+                      |
+                      |  Once all messages of this type have been sent to each player the game
+                      |  is complete and all players are disconnected.
 
 -------------------------------------------------------------------------------
 
@@ -330,7 +354,7 @@ In this example the customized game settings are turn timeout and submarine coun
     V|SUB_COUNT|3         |  Setting Name  = SUB_COUNT
                           |  Setting Value = 3
 
-To reiterate: the 3 messages shown above would be sent to each player that connected to the game server.  This is what each player would receive from the server immediately after connecting (note the inclusion of the new-line `\n` character at the end of each message):
+To reiterate: the 3 messages shown above would be sent to each player that connected to the game server.  This is what each player would receive from the server immediately after connecting (note the inclusion of a new-line `\n` character at the end of each message):
 
     C|1.0.0|Example Game|50|30|2\n
     V|TURN_TIMEOUT|60000\n
@@ -344,4 +368,119 @@ Then each player would then attempt to join the game by sending their player nam
                                      |  Sub 0 coordinates = 13|3
                                      |  Sub 1 coordinates = 39|10
                                      |  Sub 2 coordinates = 27|15
+
+### Turn Sequence
+
+After enough players to meet the minimum player count setting have joined a game the game may begin.  Once the game begins the server stops listening for new connections and sends a `B` (begin turn) message to all joined players.
+
+    Message  |  Details
+    ==========================
+    B        |  No parameters
+
+Each player must sent exactly one command message for each of their `active` submarines.  Here is an example of what the messages might look like from player 1 in a game where each player has 3 submarines:
+
+    Message      |  Details
+    ========================================================
+    M|0|E|Sonar  | Move submarine 0 east and charge Sonar
+    --------------------------------------------------------
+    P|1          | Activate sonar ping from submarine 1
+    -------------------------------------------------------------
+    F|2|31|15    | Fire torpedo at square 31|15 from submarine 2
+
+This is what the messages would look like (note the inclusion of a new-line `\n` character at the end of each message):
+
+    M|0|E|Sonar\n
+    P|1\n
+    F|2|31|15\n
+ 
+That player would then wait for turn result messages.  Here are some examples:
+
+    Message    |  Details
+    ==============================================================================================
+    S|3        |  3 sonar pings occurred this turn.
+               |  This includes the ping done by player 1 this turn, so the other 2 pings
+               |  came from submarines owned by other players.
+    ----------------------------------------------------------------------------------------------
+    D|31|15|1  |  A detonation with a blast radius of 1 was detected at square 31|15.
+               |  Note that player 1 fired a torpedo at this square this turn.
+    ----------------------------------------------------------------------------------------------
+    D|28|16|1  |  A detonation with a blast radius of 1 was detected at square 28|16.
+
+The messages above are sent to all players.
+
+The messages below are only sent to player 1.
+
+    Message              |  Details
+    ==============================================================================================
+    O|33|19|20           |  An object with an approximate size of 20 was detected at square 33|19.
+    ----------------------------------------------------------------------------------------------
+    O|34|17|100          |  An object with an approximate size of 100 was detected at square 34|17.
+    ----------------------------------------------------------------------------------------------
+    T|37|15|1            |  A torpedo fired by player 1 detonated at square 37|15 and inflicted
+                         |  1 point of damage on an enemy submarine.
+    ----------------------------------------------------------------------------------------------
+    I|0|13|4|0|3|0|0|0   |  Submarine 0 moved east this turn and is now at square 13|4.
+                         |  This sub has scored 0 hits on enemy subs so far.
+                         |  This sub has 3 shields.
+                         |  This sub has 0 points of reactor core damage.
+                         |  This sub is not surfaced and not dead.
+    ----------------------------------------------------------------------------------------------
+    I|1|39|10|0|3|0|0|0  |  Submarine 1 is at square 39|10.
+                         |  This sub has scored 0 hits on enemy subs so far.
+                         |  This sub has 3 shields.
+                         |  This sub has 0 points of reactor core damage.
+                         |  This sub is not surfaced and not dead.
+    ----------------------------------------------------------------------------------------------
+    I|2|27|15|1|2|0|0|0  |  Submarine 2 is at square 27|15.
+                         |  This sub has scored 1 hit on enemy subs so far.
+                         |  This sub has 2 shields (took an indirect hit from D|28|16|1).
+                         |  This sub has 0 points of reactor core damage.
+                         |  This sub is not surfaced and not dead.
+
+To reiterate, a single turn within the game is started when the server sends a `B` (begin turn) message to all players.  Then all players must submit one command for every active submarine they own.  Then the server sends the appropriate turn result messages to each player.  The above example message sequence (which only shows messages from player 1 perspective) would look like this (note the new-line `\n` character at the end of each message):
+
+    Server Message         |  Client Message
+    =========================================
+    B\n                    |
+                           |  M|0|E|Sonar\n
+                           |  P|1\n
+                           |  F|2|31|15\n
+    S|3\n                  |
+    D|31|15|1\n            |
+    D|28|16|1\n            |
+    O|33|19|20\n           |
+    O|34|17|100\n          |
+    T|37|15|1\n            |
+    I|0|13|4|0|3|0|0|0\n   |
+    I|1|39|10|0|3|0|0|0\n  |
+    I|2|27|15|1|2|0|0|0\n  |
+
+After all turn results messages have been sent out the server will either start a new turn (send out a new `B` message) or send out an `F` (game finished) message.
+
+### Game Finished
+
+When the server sends an `F` (game finished) message it will also send out one `P` (player result) message for each player that joined the game.  These messages are sent to all players.
+
+    Message  |  Details
+    =============================================
+    F|87     |  Game finished in 87 turns
+
+Followed by one `P` (player result) message for each player that joined the game.
+
+    Message                |  Details
+    ==============================================================================================
+    P|0|10|87              |  Player 0 scored 10 points and played 87 turns.
+    ----------------------------------------------------------------------------------------------
+    P|1|14|87              |  Player 1 scored 14 points and played 87 turns.
+    ----------------------------------------------------------------------------------------------
+    P|2|0|19|disqualified  |  Player 2 was disqualified after 19 turns and received a score of 0.
+
+These final messages look like this (not the new-line `\n` character at the end of each message):
+
+    F|87\n
+    P|0|10|87\n
+    P|1|14|87|\n
+    P|2|0|19|disqualified\n
+
+After these messages are sent all players are disconnected.
 
