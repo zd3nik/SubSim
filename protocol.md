@@ -95,9 +95,6 @@ More info:
                       |
                       |  If `equip` is set to `None` the reactor core of the submarine being moved
                       |  takes 1 point of damage.
-                      |
-                      |  NOTE: If you deploy a mine to a square that is occupied by one or more
-                      |        objects the mine will detonate (in the destination square).
     ------------------|---------------------------------------------------------------------------
     S|tn|id|          |  Make the specified submarine sleep this turn and charge 2 equipment items.
       equip|          |
@@ -149,6 +146,9 @@ More info:
                       |            Your first submarine is ID 0, the second is ID 1, etc.
                       |    dir   = The direction of the adjacent square to deploy to.
                       |            N = north, E = east, S = south, W = west
+                      |
+                      |  NOTE: If you deploy a mine to a square that is occupied by one or more
+                      |        objects the mine will detonate (in the destination square).
     ------------------|---------------------------------------------------------------------------
     R|tn|id|dir|dist  |  Move the specified submarine 2 or more squares in the specified direction
                       |  using its sprint engine.
@@ -276,7 +276,6 @@ More info:
                       |        one object to sonar.  And the approximate size will be the sum
                       |        of all the objects.  For example, if 2 objects of size 20 are
                       |        in the same square sonar will see them as 1 object of size 40.
-                      |
     ------------------|---------------------------------------------------------------------------
     T|tn|X|Y|damage   |  One of these messages will be sent, at the end of a turn, for each
                       |  torpedo detonation that inflicted damage on one or more enemies during
