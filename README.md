@@ -76,6 +76,9 @@ Players must submit exactly one command per active submarine (owned by them) per
              |  within sonar range.
              |  The range of the sonar ping is determined by the amount of charge it has when it
              |  is activated.
+             |
+             |  Pings are loud!  Your enemies will know when you activate them, but they do not
+             |  know the source location of pings.
     -----------------------------------------------------------------------------------------------
     Fire     |  Fires a single torpedo to specified coordinates.  The torpedo will detonate when
              |  it reaches the specified coordinates.
@@ -88,25 +91,32 @@ Players must submit exactly one command per active submarine (owned by them) per
              |  The mine must be fully charged for a successful deploy.
              |  If the mine is not fully charged it will sink to the bottom of the ocean (in
              |  essence, it disappears and will never detonate).
+             |
+             |  NOTE: If you deploy a mine to a square that is occupied by one or more objects it
+             |        will detonate (in the destination square).
     -----------------------------------------------------------------------------------------------
     Sprint   |  The submarine is moved 2 or more squares north, east, south, or west in a straight
-             |  line.  The maximum number of squares the submarine can move is determined by the
-             |  amount of charge the sprint engine has when it is activated.
+             |  line.
+             |  The maximum number of squares the submarine can move is determined by the amount
+             |  of charge the sprint engine has when it is activated.
+             |  The sprint is stopped short if you run into a mine.
              |
-             |  The sprint engine makes a lot of noise noise!  Your enemies will know when you use
-             |  it, but they cannot determine the direction or the distance of the sprint.
+             |  The sprint engine makes a lot of noise!  Your enemies will know when you use it,
+             |  but they do not know the starting point, direction, or the distance of the sprint.
              |
              |  Sprinting puts excess strain on your nuclear reactor.  If the number of squares
              |  you attempt to sprint plus the number of damage points your reactor has taken is
              |  greater or equal to the maximum damage your reactor can take, the reactor will
              |  detonate (See the "Nuclear Reactor Detonation" section below).
     -----------------------------------------------------------------------------------------------
-    Surface  |  Remain at the same square for 3 successive turns to repair 1 shield.
-             |  You cannot submit any commands while surfaced and no equipment is charged while
-             |  surfaced.  At the end of the 3rd turn one shield is repaired.
+    Surface  |  Remain at the same square for 3 successive turns to repair one shield.
+             |  The shield is repaired at the end of the 3rd turn.
+             |  You cannot submit any commands for the submarine while it is surfaced.
+             |  No equipment on the submarine can be charged while it is surfaced.
              |
              |  You will remain surfaced for all 3 turns no matter how many shields your submarine
-             |  had at the beginning of the maneuver.
+             |  had at the beginning of the maneuver, even if the submarine already had its
+             |  maximum number of shields when you issued the command to surface.
              |
              |  This maneuver can only restore up to the maximum shield count for the submarine.
              |  The submarine is not visible to sonar while it is surfaced.
@@ -115,7 +125,7 @@ Players must submit exactly one command per active submarine (owned by them) per
 Charging Equipment
 ------------------
 
-Each submarine produces a finite amount of power per turn.  This power can be used to `charge` or `activate` equipment.  Sonar, torpedos, mines, sprints, and surfacing all require power to activate.  And they must be charged before they are activated (with the exception of surfacing), otherwise they do nothing.
+Each submarine produces a finite amount of power per turn.  This power can be used to `charge` or `activate` equipment.  Sonar, torpedos, mines, sprints, and surfacing all require power to activate.  And they must be charged before they are activated (with the exception of surfacing), otherwise they do nothing when activated.
 
 The maximum units of charge and the effectiveness of the charge per equipment item is as follows:
 
@@ -194,8 +204,8 @@ These results are sent to all players.
     -----------------------------------------------------------------------------------------------
     Sprint Activations   |  The number of sprint engines activated in this turn.
                          |  This is only a count.  It does not include the location of the
-                         |  submarines that activated their sprint engine or the direction of the
-                         |  sprints.
+                         |  submarines that activated their sprint engine, the direction of the
+                         |  sprints, or the distance of the sprints.
     -----------------------------------------------------------------------------------------------
     Detonation           |  There will be one of these messages for each detonation that occurred
                          |  this turn.  It provides the exact location and size (blast radius) of
@@ -236,8 +246,9 @@ These results are sent only to the player the information is intended for.
     -----------------------------------------------------------------------------------------------
     Error Message        |  You will receive one error message for each illegal or invalid
                          |  command you submitted this turn.
-                         |  NOTE: If you generate two or more error messages throughout the course
-                         |  of the game you will be removed from the game and given a score of 0.
+                         |
+                         |  NOTE: If you generate two or more error messages throughout the game
+                         |        you will be removed from the game and given a score of 0.
 
 Ineffective, Illegal, and Invalid Commands
 ------------------------------------------

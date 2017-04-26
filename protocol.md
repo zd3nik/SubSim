@@ -7,25 +7,24 @@ All messages are a pipe delimited list of fields of this form:
 
     TYPE|VALUE|VALUE|...\n
 
-The number of `VALUE` fields in a message is determined by the `TYPE`.  NOTE: Some message types may not have any `VALUE` fields.  In such cases the message will not contain any pipe `|` characters, it will just be the type character followed by the new-line `\m` character:
+The number of `VALUE` fields in a message is determined by the `TYPE`.
 
-    TYPE\n
-
-The `TYPE` field is always a single ASCII character.  This is so you can easily check the message type by examining the first two characters of the message, which will be the type character followed by a pipe `|` character (or the type character followed by a new-line `\n` character if the specific message type does not have any `VALUE` fields). **Only checking the first character to determine the message type could lead to errors.**  For example, if you receive `No space left on device` the message type is *not* `N`, it is an errant/invalid message and should be treated as an error message.
+The `TYPE` field is always a single ASCII character.  This is so you can easily check the message type by examining the first two characters of the message, which will always be the type character followed by a pipe `|` character. **Only checking the first character to determine the message type could lead to errors.**  For example, if you receive `No space left on device` the message type is *not* `N`, it is an errant/invalid message and should be treated as an error message.
 
 Any message that does not follow the prescribed format should be treated as an `ERROR MESSAGE`.
 
 Leading and trailing whitespace characters should be stripped from each field.
 
-An example message type is `M` (move submarine).  An `M` message has 3 value fields: `sub_id|direction|equipment_name`
+An example message type is `M` (move submarine).  An `M` message has 4 value fields: `turn_number|sub_id|direction|equipment_name`
 
+ * `turn_number` = which turn the command was submitted in
  * `sub_id` = the integer ID of the submarine to move (your first submarine is ID 0, second is ID 1, etc)
  * `direction` = the direction to move the submarine: N, E, S, or W
  * `equipment_name` = the name of the equipment to charge: Sonar, Torpedo, Mine, Sprint, None
 
-So an `M` message that moves submarine 0 north and charges sonar looks like this:
+So an `M` message that moves submarine 0 north and charges sonar in the 5th turn looks like this:
 
-    M|0|N|Sonar\n
+    M|5|0|N|Sonar\n
 
 ### Limitations
 
@@ -96,6 +95,9 @@ More info:
                       |
                       |  If `equip` is set to `None` the reactor core of the submarine being moved
                       |  takes 1 point of damage.
+                      |
+                      |  NOTE: If you deploy a mine to a square that is occupied by one or more
+                      |        objects the mine will detonate (in the destination square).
     ------------------|---------------------------------------------------------------------------
     S|tn|id|          |  Make the specified submarine sleep this turn and charge 2 equipment items.
       equip|          |
@@ -269,6 +271,12 @@ More info:
                       |  Exactly one of these messages is sent per object (per player that
                       |  discovered the object), even if the player activated multiple sonar
                       |  scans within range of the object.
+                      |
+                      |  NOTE: If multiple objects are in the same square they will appear as
+                      |        one object to sonar.  And the approximate size will be the sum
+                      |        of all the objects.  For example, if 2 objects of size 20 are
+                      |        in the same square sonar will see them as 1 object of size 40.
+                      |
     ------------------|---------------------------------------------------------------------------
     T|tn|X|Y|damage   |  One of these messages will be sent, at the end of a turn, for each
                       |  torpedo detonation that inflicted damage on one or more enemies during
@@ -363,7 +371,7 @@ Examples
 
 ### Game Start
 
-Before a game can start the minimum number of players required by the game configuration must join.  During this time the server accepts new TCP socket connection.
+Before a game can start the minimum number of players required by the game configuration must join.  During this time the server accepts new TCP socket connections.
 
 When a player (client) connects during this time the game server immediately sends the player a game configuration message:
 
@@ -445,10 +453,10 @@ The messages below are only sent to player 1.
 
     Message                |  Details
     =======================|======================================================================
-    O|1|33|19|20           |  An object with an approximate size of 20 was detected at square
+    O|1|33|19|20           |  Something with an approximate size of 20 was detected at square
                            |  33|19 in turn 1.
     -----------------------|----------------------------------------------------------------------
-    O|1|34|17|100          |  An object with an approximate size of 100 was detected at square
+    O|1|34|17|100          |  Something with an approximate size of 100 was detected at square
                            |  34|17 in turn 1.
     -----------------------|----------------------------------------------------------------------
     T|1|37|15|1            |  In turn 1 a torpedo fired by player 1 detonated at square 37|15 and
