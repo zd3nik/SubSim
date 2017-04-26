@@ -461,23 +461,22 @@ The messages below are only sent to player 1.
     T|1|37|15|1            |  In turn 1 a torpedo fired by player 1 detonated at square 37|15 and
                            |  inflicted 1 point of damage on an enemy submarine.
     -----------------------|----------------------------------------------------------------------
-    I|1|0|13|4|0|3|0|0|0   |  In turn 1 submarine 0 ended up at square 13|4.
-                           |  This sub has scored 0 hits on enemy subs so far.
+    I|1|0|13|4|3|0|0|0     |  In turn 1 submarine 0 ended up at square 13|4.
                            |  This sub has 3 shields.
                            |  This sub has 0 points of reactor core damage.
                            |  This sub is not surfaced and not dead.
     -----------------------|----------------------------------------------------------------------
-    I|1|1|39|10|0|3|0|0|0  |  In turn 1 submarine 1 ended up at square 39|10.
-                           |  This sub has scored 0 hits on enemy subs so far.
+    I|1|1|39|10|3|0|0|0    |  In turn 1 submarine 1 ended up at square 39|10.
                            |  This sub has 3 shields.
                            |  This sub has 0 points of reactor core damage.
                            |  This sub is not surfaced and not dead.
     -----------------------|----------------------------------------------------------------------
-    I|1|2|27|15|1|2|0|0|0  |  In turn 1 submarine 2 ended up at square 27|15.
-                           |  This sub has scored 1 hit on enemy subs so far.
+    I|1|2|27|15|2|0|0|0    |  In turn 1 submarine 2 ended up at square 27|15.
                            |  This sub has 2 shields (took an indirect hit from D|28|16|1).
                            |  This sub has 0 points of reactor core damage.
                            |  This sub is not surfaced and not dead.
+    -----------------------|----------------------------------------------------------------------
+    H|1|1                  |  After turn 1 your score is 1
 
 To reiterate, a single turn within the game is started when the server sends a `B` (begin turn) message to all players.  Then all players must submit one command for every active submarine they own.  Then the server sends the appropriate turn result messages to each player.  The above example message sequence (which only shows messages from player 1 perspective) would look like this (note the new-line `\n` character at the end of each message):
 
@@ -493,9 +492,10 @@ To reiterate, a single turn within the game is started when the server sends a `
     O|1|33|19|20\n           |
     O|1|34|17|100\n          |
     T|1|37|15|1\n            |
-    I|1|0|13|4|0|3|0|0|0\n   |
-    I|1|1|39|10|0|3|0|0|0\n  |
-    I|1|2|27|15|1|2|0|0|0\n  |
+    I|1|0|13|4|3|0|0|0\n     |
+    I|1|1|39|10|3|0|0|0\n    |
+    I|1|2|27|15|2|0|0|0\n    |
+    H|1|1                    |
 
 NOTE: The turn number must be the same in all message sent during a single turn.  In this example the turn number is 1.  If it was turn number 2, then all messages would have 2 as the turn number.
 
