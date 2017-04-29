@@ -1,15 +1,14 @@
 //-----------------------------------------------------------------------------
-// Game.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #ifndef SUBSIM_GAME_H
 #define SUBSIM_GAME_H
 
-#include "Platform.h"
-#include "Board.h"
-#include "Configuration.h"
-#include "Timer.h"
+#include "utils/Platform.h"
+#include "utils/Timer.h"
 #include "db/Database.h"
+#include "GameConfig.h"
+#include "GameMap.h"
 
 namespace subsim
 {

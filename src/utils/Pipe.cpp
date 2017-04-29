@@ -1,11 +1,10 @@
 //-----------------------------------------------------------------------------
-// Pipe.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "Pipe.h"
+#include "Error.h"
 #include "Msg.h"
 #include "StringUtils.h"
-#include "Error.h"
 #include <csignal>
 #include <cstring>
 #include <fcntl.h>

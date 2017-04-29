@@ -1,5 +1,4 @@
 //-----------------------------------------------------------------------------
-// CanonicalMode.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #ifndef SUBSIM_CANONICAL_MODE_H

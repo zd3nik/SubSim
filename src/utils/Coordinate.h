@@ -1,5 +1,4 @@
 //-----------------------------------------------------------------------------
-// Coordinate.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #ifndef SUBSIM_COORDINATE_H
@@ -8,6 +7,7 @@
 #include "Platform.h"
 #include "Movement.h"
 #include "Printable.h"
+#include "StringUtils.h"
 
 namespace subsim
 {

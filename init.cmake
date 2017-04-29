@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.1)
-
 set(CMAKE_CXX_FLAGS "-fPIC -m64 -Wall ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_STANDARD 11)
 

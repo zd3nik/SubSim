@@ -1,14 +1,13 @@
 //-----------------------------------------------------------------------------
-// Screen.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #ifndef SUBSIM_SCREEN_H
 #define SUBSIM_SCREEN_H
 
 #include "Platform.h"
-#include "Rectangle.h"
 #include "Coordinate.h"
 #include "Printable.h"
+#include "Rectangle.h"
 
 namespace subsim
 {

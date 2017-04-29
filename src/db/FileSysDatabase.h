@@ -1,16 +1,15 @@
 //-----------------------------------------------------------------------------
-// FileSysDatabase.h
-// Copyright (c) 2016-2017 Shawn Chidester, All rights reserved
+// Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
-#ifndef XBS_FILE_SYS_DATABASE_H
-#define XBS_FILE_SYS_DATABASE_H
+#ifndef SUBSIM_FILE_SYS_DATABASE_H
+#define SUBSIM_FILE_SYS_DATABASE_H
 
-#include "Platform.h"
+#include "utils/Platform.h"
 #include "Database.h"
 #include "FileSysDBRecord.h"
 #include <dirent.h>
 
-namespace xbs
+namespace subsim
 {
 
 //-----------------------------------------------------------------------------
@@ -68,6 +67,6 @@ private: // methods
   void loadRecord(const std::string& recordID);
 };
 
-} // namespace xbs
+} // namespace subsim
 
-#endif // XBS_FILE_SYS_DATABASE_H
+#endif // SUBSIM_FILE_SYS_DATABASE_H

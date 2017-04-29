@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
-// Screen.cpp
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "Screen.h"
+#include "Error.h"
 #include "Logger.h"
 #include "Msg.h"
 #include "StringUtils.h"
-#include "Error.h"
 #include <sys/ioctl.h>
 
 namespace subsim

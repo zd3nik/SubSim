@@ -1,11 +1,10 @@
 //-----------------------------------------------------------------------------
-// DBRecord.cpp
-// Copyright (c) 2016-2017 Shawn Chidester, All rights reserved
+// Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "DBRecord.h"
-#include "StringUtils.h"
+#include "utils/StringUtils.h"
 
-namespace xbs
+namespace subsim
 {
 
 //-----------------------------------------------------------------------------
@@ -179,5 +178,5 @@ unsigned DBRecord::addBools(const std::string& fld,
   return addStrings(fld, strValues);
 }
 
-} // namespace xbs
+} // namespace subsim
 

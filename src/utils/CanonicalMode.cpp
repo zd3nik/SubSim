@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
-// CanonicalMode.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "CanonicalMode.h"
+#include "Error.h"
 #include "Logger.h"
 #include "Msg.h"
 #include "StringUtils.h"
-#include "Error.h"
 
 namespace subsim
 {

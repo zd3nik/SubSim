@@ -1,15 +1,14 @@
 //-----------------------------------------------------------------------------
-// FileSysDBRecord.cpp
-// Copyright (c) 2016-2017 Shawn Chidester, All rights reserved
+// Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "FileSysDBRecord.h"
-#include "Input.h"
-#include "Logger.h"
-#include "Msg.h"
-#include "StringUtils.h"
-#include "Error.h"
+#include "utils/Error.h"
+#include "utils/Input.h"
+#include "utils/Logger.h"
+#include "utils/Msg.h"
+#include "utils/StringUtils.h"
 
-namespace xbs
+namespace subsim
 {
 
 //-----------------------------------------------------------------------------
@@ -201,4 +200,4 @@ std::string FileSysDBRecord::validate(const std::string& fieldName,
   return fld;
 }
 
-} // namespace xbs
+} // namespace subsim

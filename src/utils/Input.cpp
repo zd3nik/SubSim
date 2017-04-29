@@ -1,13 +1,12 @@
 //-----------------------------------------------------------------------------
-// Input.cpp
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "Input.h"
 #include "CSVReader.h"
+#include "Error.h"
 #include "Logger.h"
 #include "Msg.h"
 #include "StringUtils.h"
-#include "Error.h"
 #include <sys/select.h>
 
 namespace subsim

@@ -1,14 +1,13 @@
 //-----------------------------------------------------------------------------
-// ShellProcess.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "ShellProcess.h"
 #include "CSVReader.h"
 #include "CSVWriter.h"
+#include "Error.h"
 #include "Logger.h"
 #include "Msg.h"
 #include "StringUtils.h"
-#include "Error.h"
 #include <csignal>
 #include <sys/stat.h>
 #include <sys/wait.h>

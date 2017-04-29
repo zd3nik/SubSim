@@ -1,15 +1,14 @@
 //-----------------------------------------------------------------------------
-// Database.h
-// Copyright (c) 2016-2017 Shawn Chidester, All rights reserved
+// Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
-#ifndef XBS_DATABASE_H
-#define XBS_DATABASE_H
+#ifndef SUBSIM_DATABASE_H
+#define SUBSIM_DATABASE_H
 
-#include "Platform.h"
+#include "utils/Platform.h"
+#include "utils/Printable.h"
 #include "DBRecord.h"
-#include "Printable.h"
 
-namespace xbs
+namespace subsim
 {
 
 //-----------------------------------------------------------------------------
@@ -27,6 +26,6 @@ public: // abstract methods
                                         const bool add) = 0;
 };
 
-} // namespace xbs
+} // namespace subsim
 
-#endif // XBS_DATABASE_H
+#endif // SUBSIM_DATABASE_H

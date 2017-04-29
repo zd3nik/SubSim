@@ -1,14 +1,13 @@
 //-----------------------------------------------------------------------------
-// FileSysDBRecord.h
-// Copyright (c) 2016-2017 Shawn Chidester, All rights reserved
+// Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
-#ifndef XBS_FILESYSDBRECORD_H
-#define XBS_FILESYSDBRECORD_H
+#ifndef SUBSIM_FILESYSDBRECORD_H
+#define SUBSIM_FILESYSDBRECORD_H
 
-#include "Platform.h"
+#include "utils/Platform.h"
 #include "DBRecord.h"
 
-namespace xbs
+namespace subsim
 {
 
 //-----------------------------------------------------------------------------
@@ -54,6 +53,6 @@ private: // methods
                        const std::string& val = "") const;
 };
 
-} // namespace xbs
+} // namespace subsim
 
-#endif // XBS_FILESYSDBRECORD_H
+#endif // SUBSIM_FILESYSDBRECORD_H

@@ -1,12 +1,11 @@
 //-----------------------------------------------------------------------------
-// GameMap.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #ifndef SUBSIM_GAME_MAP_H
 #define SUBSIM_GAME_MAP_H
 
-#include "Platform.h"
-#include "Rectangle.h"
+#include "utils/Platform.h"
+#include "utils/Rectangle.h"
 #include "Square.h"
 
 namespace subsim

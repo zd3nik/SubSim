@@ -1,14 +1,13 @@
 //-----------------------------------------------------------------------------
-// DBRecord.h
-// Copyright (c) 2016-2017 Shawn Chidester, All rights reserved
+// Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
-#ifndef XBS_DB_RECORD_H
-#define XBS_DB_RECORD_H
+#ifndef SUBSIM_DB_RECORD_H
+#define SUBSIM_DB_RECORD_H
 
-#include "Platform.h"
-#include "Printable.h"
+#include "utils/Platform.h"
+#include "utils/Printable.h"
 
-namespace xbs
+namespace subsim
 {
 
 //-----------------------------------------------------------------------------
@@ -63,7 +62,7 @@ public: // virtual methods
                             const std::vector<bool>& values);
 };
 
-} // namespace xbs
+} // namespace subsim
 
-#endif // XBS_DB_RECORD_H
+#endif // SUBSIM_DB_RECORD_H
 

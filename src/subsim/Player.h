@@ -1,9 +1,8 @@
 //-----------------------------------------------------------------------------
-// Board.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
-#ifndef XBS_BOARD_H
-#define XBS_BOARD_H
+#ifndef SUBSIM_BOARD_H
+#define SUBSIM_BOARD_H
 
 #include "Platform.h"
 #include "Configuration.h"
@@ -12,7 +11,7 @@
 #include "TcpSocket.h"
 #include "db/DBRecord.h"
 
-namespace xbs
+namespace subsim
 {
 
 //-----------------------------------------------------------------------------
@@ -203,6 +202,6 @@ private: // methods
 //-----------------------------------------------------------------------------
 typedef std::shared_ptr<Board> BoardPtr;
 
-} // namespace xbs
+} // namespace subsim
 
-#endif // XBS_BOARD_H
+#endif // SUBSIM_BOARD_H

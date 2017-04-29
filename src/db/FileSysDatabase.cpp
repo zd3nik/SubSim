@@ -1,16 +1,15 @@
 //-----------------------------------------------------------------------------
-// FileSysDatabase.cpp
-// Copyright (c) 2016-2017 Shawn Chidester, All rights reserved
+// Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "FileSysDatabase.h"
 #include "FileSysDBRecord.h"
-#include "Logger.h"
-#include "Msg.h"
-#include "StringUtils.h"
-#include "Error.h"
+#include "utils/Error.h"
+#include "utils/Logger.h"
+#include "utils/Msg.h"
+#include "utils/StringUtils.h"
 #include <sys/stat.h>
 
-namespace xbs
+namespace subsim
 {
 
 //-----------------------------------------------------------------------------
@@ -170,4 +169,4 @@ std::vector<std::string> FileSysDatabase::getRecordIDs() {
   return recordIDs;
 }
 
-} // namespace xbs
+} // namespace subsim

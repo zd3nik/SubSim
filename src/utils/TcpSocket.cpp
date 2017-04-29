@@ -1,14 +1,13 @@
 //-----------------------------------------------------------------------------
-// TcpSocket.h
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "TcpSocket.h"
 #include "CSVWriter.h"
+#include "Error.h"
 #include "Input.h"
 #include "Logger.h"
 #include "Msg.h"
 #include "StringUtils.h"
-#include "Error.h"
 #include <cstring>
 #include <netdb.h>
 #include <arpa/inet.h>
