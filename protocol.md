@@ -65,7 +65,7 @@ More info:
                       |    X     = The column number to place a submarine at.
                       |            Column numbers start a 0.
                       |    Y     = The row number to place a submarine at.
-                      |            Row numbers start at 0.
+                      |            Row numbers start at 1.
                       |  
                       |  If the game configuration contains pre-set starting positions for your
                       |  submarines you must not provide any X|Y fields.
@@ -133,7 +133,7 @@ More info:
                       |    X     = The column number of the torpedo destination.
                       |            Column numbers start a 0.
                       |    Y     = The row number of the torpedo destination.
-                      |            Row numbers start at 0.
+                      |            Row numbers start at 1.
     ------------------|---------------------------------------------------------------------------
     D|tn|id|dir       |  Deploy a mine from the specified submarine.
                       |  The mine is deployed to the square adjacent to submarine in the specified
@@ -249,9 +249,9 @@ More info:
                       |
                       |    tn      = The turn number.
                       |    X       = The column of the detonation.
-                      |              Column numbers start at 0.
+                      |              Column numbers start at 1.
                       |    Y       = The row of the detonation.
-                      |              Row numbers start at 0.
+                      |              Row numbers start at 1.
                       |    radius  = The blast radius of the detonation.
     ------------------|---------------------------------------------------------------------------
     O|tn|X|Y|size     |  One of these messages will be sent, at the end of a turn, for each object
@@ -263,9 +263,9 @@ More info:
                       |
                       |    tn      = The turn number.
                       |    X       = The column of the object.
-                      |              Column numbers start at 0.
+                      |              Column numbers start at 1.
                       |    Y       = The row of the object.
-                      |              Row numbers start at 0.
+                      |              Row numbers start at 1.
                       |    size    = The approximate size of the object.
                       |
                       |  Exactly one of these messages is sent per object (per player that
@@ -286,9 +286,9 @@ More info:
                       |
                       |    tn      = The turn number.
                       |    X       = The column of the torpedo detonation.
-                      |              Column numbers start at 0.
+                      |              Column numbers start at 1.
                       |    Y       = The row of the torpedo detonation.
-                      |              Row numbers start at 0.
+                      |              Row numbers start at 1.
                       |    damage  = The total number of damage points inflicted by the torpedo.
     ------------------|---------------------------------------------------------------------------
     M|tn|X|Y|damage   |  One of these messages will be sent, at the end of a turn, for each
@@ -300,9 +300,9 @@ More info:
                       |
                       |    tn      = The turn number.
                       |    X       = The column of the mine that detonated.
-                      |              Column numbers start at 0.
+                      |              Column numbers start at 1.
                       |    Y       = The row of the mine that detonated.
-                      |              Row numbers start at 0.
+                      |              Row numbers start at 1.
                       |    damage  = The total number of damage points inflicted by the mine.
     ------------------|---------------------------------------------------------------------------
     I|tn|id|X|Y|      |  One of these messages will be sent, at the end of a turn, for each
@@ -314,9 +314,9 @@ More info:
                       |    id      = The ID of the submarine.
                       |              Submarine IDs start at 0 (per player).
                       |    X       = The column of the submarine.
-                      |              Column numbers start at 0;
+                      |              Column numbers start at 1;
                       |    Y       = The row of the submarine.
-                      |              Row numbers start at 0;
+                      |              Row numbers start at 1;
                       |    shields = The number of shields this submarine has remaining.
                       |    damage  = The amount of reactor core damage this submarine has.
                       |    surface = Is this submarine currently surfaced?

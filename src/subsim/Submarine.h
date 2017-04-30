@@ -25,8 +25,8 @@ public: // enums
   };
 
 //-----------------------------------------------------------------------------
-private: // configurable variables
-  Coordinate startLocation;
+private: // variables
+  Coordinate location;
   unsigned surfaceTurnCount = 3;
   unsigned maxShields = 3;
   unsigned maxReactorDamage = 9;
@@ -36,11 +36,6 @@ private: // configurable variables
   unsigned maxSprintCharge = 9;
   unsigned torpedoCount = 9999;
   unsigned mineCount = 9999;
-
-//-----------------------------------------------------------------------------
-private: // runtime variables
-  bool dead = false;
-  bool detonated = false;
   unsigned surfaceTurns = 0; // turns remaining until surface maneuver complete
   unsigned shieldCount = maxShields;
   unsigned reactorDamage = 0;
@@ -48,6 +43,8 @@ private: // runtime variables
   unsigned torpedoCharge = 0;
   unsigned mineCharge = 0;
   unsigned sprintCharge = 0;
+  bool dead = false;
+  bool detonated = false;
 
 //-----------------------------------------------------------------------------
 public: // constructors
@@ -69,8 +66,8 @@ public: // static methods
 
 //-----------------------------------------------------------------------------
 public: // setters
-  Submarine& setStartLocation(const Coordinate& coord) noexcept {
-    startLocation = coord;
+  Submarine& setLocation(const Coordinate& coord) noexcept {
+    location = coord;
   }
 
   Submarine& setSurfaceTurnCount(const unsigned count) noexcept {
@@ -120,8 +117,8 @@ public: // setters
 
 //-----------------------------------------------------------------------------
 public: // getters
-  Coordinate getStartLocation() const noexcept {
-    return startLocation;
+  Coordinate getLocation() const noexcept {
+    return location;
   }
 
   bool isDead() const noexcept {
@@ -186,7 +183,7 @@ public: // methods
 
 //-----------------------------------------------------------------------------
 typedef std::unique_ptr<Submarine> UniqueSubPtr;
-typedef std::shared_ptr<Submarine> SharedSubPtr;
+typedef std::shared_ptr<Submarine> SubmarinePtr;
 
 } // namespace subsim
 

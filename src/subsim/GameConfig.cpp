@@ -45,6 +45,20 @@ GameConfig::validate() const {
                 << ") does not equal subs per player count ("
                 << subsPerPlayer << ")");
   }
+  for (unsigned i = 0; i < submarineConfigs.size(); ++i) {
+    const auto sub = submarineConfigs[i];
+    if (!sub) {
+      throw Error(Msg() << "Null sub pointer at index " << i);
+    }
+    if (sub->getParentID() != ~0U) {
+      throw Error(Msg() << "Sub config " << i << " has parent ID "
+                  << sub->getParentID());
+    }
+    if (sub->getObjectID() != i) {
+      throw Error(Msg() << "Sub config " << i << " has object ID "
+                  << sub->getObjectID());
+    }
+  }
   if (obstacles.size() > ((mapWidth * mapHeight) / 4)) {
     throw Error("Obstacle count may not exceed 1/4 of map area");
   }

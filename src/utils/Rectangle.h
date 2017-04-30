@@ -103,7 +103,7 @@ public: // operator overloads
   explicit operator bool() const noexcept { return isValid();  }
 
   bool operator<(const Rectangle& other) const noexcept {
-    return begin.before(other.begin);
+    return (begin < other.begin);
   }
 
   bool operator==(const Rectangle& other) const noexcept {

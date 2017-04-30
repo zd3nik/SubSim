@@ -5,12 +5,13 @@
 #define SUBSIM_OBJECT_H
 
 #include "utils/Platform.h"
+#include "utils/Printable.h"
 
 namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-class Object {
+class Object : public Printable {
 //-----------------------------------------------------------------------------
 private: // variables
   const unsigned playerID;
@@ -54,6 +55,9 @@ public: // getters
     return mobile;
   }
 };
+
+//-----------------------------------------------------------------------------
+typedef std::shared_ptr<Object> ObjectPtr;
 
 } // namespace subsim
 

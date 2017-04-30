@@ -2,11 +2,11 @@
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "Game.h"
-#include "Logger.h"
-#include "Msg.h"
-#include "Screen.h"
-#include "StringUtils.h"
-#include "Error.h"
+#include "utils/Error.h"
+#include "utils/Logger.h"
+#include "utils/Msg.h"
+#include "utils/Screen.h"
+#include "utils/StringUtils.h"
 #include "db/DBRecord.h"
 
 namespace subsim

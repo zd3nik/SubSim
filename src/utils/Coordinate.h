@@ -116,10 +116,6 @@ public: // methods
     return (*this);
   }
 
-  bool before(const Coordinate& other) const noexcept {
-    return ((y < other.y) || ((y == other.y) && (x < other.x)));
-  }
-
 //-----------------------------------------------------------------------------
 public: // operator overloads
   explicit operator bool() const noexcept { return (x && y); }
@@ -134,6 +130,10 @@ public: // operator overloads
 
   bool operator!=(const Coordinate& other) const noexcept {
     return !operator==(other);
+  }
+
+  bool operator<(const Coordinate& other) const noexcept {
+    return ((y < other.y) || ((y == other.y) && (x < other.x)));
   }
 };
 
