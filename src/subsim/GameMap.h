@@ -27,15 +27,14 @@ public: // constructors
   GameMap& operator=(GameMap&&) = delete;
   GameMap& operator=(const GameMap&) = delete;
 
-  explicit GameMap(const unsigned width, const unsigned height);
-
 //-----------------------------------------------------------------------------
 public: // methods
-  Square& getSquare(const Coordinate&) const;
+  void reset(const unsigned width, const unsigned height);
   void addObject(const Coordinate&, ObjectPtr);
   void removeObject(const Coordinate&, ObjectPtr);
   void moveObject(const Coordinate& from, const Coordinate& to, ObjectPtr);
   void updateDistances(const unsigned maxDistance);
+  Square& getSquare(const Coordinate&) const;
 
 //-----------------------------------------------------------------------------
 private: // methods

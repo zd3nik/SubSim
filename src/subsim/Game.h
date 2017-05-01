@@ -29,20 +29,23 @@ private: // variables
 
 //-----------------------------------------------------------------------------
 public: // constructors
-  Game() = delete;
   Game(Game&&) = delete;
   Game(const Game&) = delete;
   Game& operator=(Game&&) = delete;
   Game& operator=(const Game&) = delete;
 
-  Game(const GameConfig& config, const std::string& title)
-    : title(title),
-      config(config),
-      gameMap(config.getMapWidth(), config.getMapHeight())
-  { }
-
 //-----------------------------------------------------------------------------
 public: // methods
+  void reset(const GameConfig& gameConfig, const std::string& gameTitle) {
+    title = gameTitle;
+    config = gameConfig;
+    gameMap.reset(config.getMapWidth(), config.getMapHeight());
+    started = 0;
+    aborted = 0;
+    finished = 0;
+    turnNumber = 0;
+  }
+
   const std::string& getTitle() const noexcept { return title; }
   const GameConfig& getConfig() const noexcept { return config; }
   const GameMap& getMap() const noexcept { return gameMap; }

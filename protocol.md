@@ -9,7 +9,7 @@ All messages are a pipe delimited list of fields of this form:
 
 The number of `VALUE` fields in a message is determined by the `TYPE`.
 
-The `TYPE` field is always a single ASCII character.  This is so you can easily check the message type by examining the first two characters of the message, which will always be the type character followed by a pipe `|` character. **Only checking the first character to determine the message type could lead to errors.**  For example, if you receive `No space left on device` the message type is *not* `N`, it is an errant/invalid message and should be treated as an error message.
+The `TYPE` field is always a single ASCII character.  This is so you can easily check the message type by examining the first two characters of the message, which will always be the type character followed by a pipe `|` character. **Only checking the first character to determine the message type could lead to errors.**  For example, if you receive `Protocol Error` the message type is *not* `P`, it is an errant/invalid message and should be treated as an error message.
 
 Any message that does not follow the prescribed format should be treated as an `ERROR MESSAGE`.
 
@@ -342,23 +342,21 @@ More info:
                       |    tn      = The turn number.
                       |    message = The error message
     ------------------|---------------------------------------------------------------------------
-    F|turns           |  This message is sent to all players when the game is finished.
+    F|players|        |  This message is sent to all players when the game is finished.
+      turns|          |
+      status          |  Fields:
                       |
-                      |  Fields:
-                      |
+                      |    players = The number of players in the game.
                       |    turns   = The number of turns executed in the game.
+                      |    status  = An english message describing how the game ended.
     ------------------|---------------------------------------------------------------------------
-    P|name|score|     |  For each player that joined the game one of these messages is sent to
-      turns|message   |  all players at the end of the game.
+    P|name|score      |  For each player that finished the game one of these messages is sent to
+                      |  all remaining players at the end of the game.
                       |
                       |  Fields:
                       |
                       |    name    = The name of the player.
                       |    score   = The number of hits this player scored during the game.
-                      |    turns   = The number of turns the player participated in.
-                      |    message = An optional message to provide exceptional details.
-                      |              Will usually not be present unless the player disconnected
-                      |              or was disqualified.
                       |
                       |  Once all messages of this type have been sent to each player the game
                       |  is complete and all players are disconnected.
@@ -505,26 +503,27 @@ After all turn results messages have been sent out the server will either start 
 
 When the server sends an `F` (game finished) message it will also send out one `P` (player result) message for each player that joined the game.  These messages are sent to all players.
 
-    Message  |  Details
-    =========|============================
-    F|87     |  Game finished in 87 turns
+    Message          |  Details
+    =================|========================================================
+    F|2|87|finished  |  Game ended with 2 players and finished after 87 turns
 
-Followed by one `P` (player result) message for each player that joined the game.
+NOTE: Currently the only status values that may be returned from this message are `finished` or `aborted`.
+
+The `F` message will be followed by a number of `P` (player result) messages equal to the player count provided in the `F` message (2 in this example).
 
     Message                |  Details
-    =======================|======================================================================
-    P|0|10|87              |  Player 0 scored 10 points and played 87 turns.
-    -----------------------|----------------------------------------------------------------------
-    P|1|14|87              |  Player 1 scored 14 points and played 87 turns.
-    -----------------------|----------------------------------------------------------------------
-    P|2|0|19|disqualified  |  Player 2 was disqualified after 19 turns and received a score of 0.
+    =======================|===================================
+    P|fred|10              |  Player `fred` scored 10 points.
+    -----------------------|-----------------------------------
+    P|alice|14             |  Player `alice` scored 14 points.
+
+NOTE: Player results are only provided for players that finish the game.  Players that disconnect or a disqualified are removed from the game entirely.
 
 These final messages look like this (note the new-line `\n` character at the end of each message):
 
-    F|87\n
-    P|0|10|87\n
-    P|1|14|87|\n
-    P|2|0|19|disqualified\n
+    F|2|87|finished\n
+    P|fred|10\n
+    P|alice|14\n
 
 After these messages are sent all players are disconnected.
 

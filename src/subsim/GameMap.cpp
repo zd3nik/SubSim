@@ -10,10 +10,13 @@ namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-GameMap::GameMap(const unsigned width, const unsigned height)
-  : Rectangle(Coordinate(1, 1), Coordinate(width, height))
-{
+void
+GameMap::reset(const unsigned width, const unsigned height) {
+  set(Coordinate(1, 1), Coordinate(width, height));
+
+  squares.clear();
   squares.reserve(getSize());
+
   for (unsigned y = 1; y < height; ++y) {
     for (unsigned x = 1; x < width; ++x) {
       squares.push_back(std::make_unique<Square>(x, y));
@@ -27,16 +30,6 @@ GameMap::GameMap(const unsigned width, const unsigned height)
     }
   }
   ASSERT(squares.size() == getSize());
-}
-
-//-----------------------------------------------------------------------------
-Square&
-GameMap::getSquare(const Coordinate& coord) const {
-  const unsigned idx = toIndex(coord);
-  if (idx < squares.size()) {
-    return (*squares[idx]);
-  }
-  throw Error(Msg() << "Invalid coordinates: " << coord);
 }
 
 //-----------------------------------------------------------------------------
@@ -116,6 +109,16 @@ GameMap::updateDistance(Square& origin,
   for (unsigned destIndex : destinations) {
     updateDistance(origin, (*squares[destIndex]), (currentDistance + 1));
   }
+}
+
+//-----------------------------------------------------------------------------
+Square&
+GameMap::getSquare(const Coordinate& coord) const {
+  const unsigned idx = toIndex(coord);
+  if (idx < squares.size()) {
+    return (*squares[idx]);
+  }
+  throw Error(Msg() << "Invalid coordinates: " << coord);
 }
 
 } // namespace subsim

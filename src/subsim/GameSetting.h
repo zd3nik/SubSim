@@ -48,6 +48,7 @@ public: // constructos
 public: // static methods
   static std::string typeName(const SettingType);
   static SettingType getType(const std::string& name);
+  static GameSetting fromMessage(const std::string& message);
 
 //-----------------------------------------------------------------------------
 public: // setters
