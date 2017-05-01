@@ -1,11 +1,11 @@
 //-----------------------------------------------------------------------------
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
-#include "Platform.h"
-#include "CommandArgs.h"
-#include "Logger.h"
-#include "Screen.h"
-#include "Server.h"
+#include "utils/Platform.h"
+#include "utils/CommandArgs.h"
+#include "utils/Logger.h"
+#include "utils/Screen.h"
+#include "subsim/Server.h"
 #include <csignal>
 
 using namespace subsim;

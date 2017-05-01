@@ -16,14 +16,16 @@ namespace subsim
 const std::string FileSysDatabase::DEFAULT_HOME_DIR = "./db";
 
 //-----------------------------------------------------------------------------
-void FileSysDatabase::close() noexcept {
+void
+FileSysDatabase::close() noexcept {
   closeDir();
   try { homeDir.clear(); } catch (...) { ASSERT(false); }
   recordCache.clear();
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDatabase::closeDir() noexcept {
+void
+FileSysDatabase::closeDir() noexcept {
   if (dir) {
     closedir(dir);
     dir = nullptr;
@@ -31,7 +33,8 @@ void FileSysDatabase::closeDir() noexcept {
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDatabase::openDir(const std::string& path) {
+void
+FileSysDatabase::openDir(const std::string& path) {
   if (dir) {
     throw Error("FileSysDatabase.openDir() dir is already open");
   } else if (isEmpty(path)) {
@@ -52,7 +55,8 @@ void FileSysDatabase::openDir(const std::string& path) {
 }
 
 //-----------------------------------------------------------------------------
-FileSysDatabase& FileSysDatabase::open(const std::string& dbURI) {
+FileSysDatabase&
+FileSysDatabase::open(const std::string& dbURI) {
   close();
   try {
     openDir(isEmpty(dbURI) ? DEFAULT_HOME_DIR : dbURI);
@@ -67,7 +71,8 @@ FileSysDatabase& FileSysDatabase::open(const std::string& dbURI) {
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDatabase::loadCache() {
+void
+FileSysDatabase::loadCache() {
   if (!dir) {
     throw Error("FileSysDatabase.loadCache() dir not open");
   }
@@ -80,7 +85,8 @@ void FileSysDatabase::loadCache() {
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDatabase::loadRecord(const std::string& recordID) {
+void
+FileSysDatabase::loadRecord(const std::string& recordID) {
   std::string path = (homeDir + "/" + recordID + ".ini");
   try {
     recordCache[recordID] = std::make_shared<FileSysDBRecord>(recordID, path);
@@ -94,7 +100,8 @@ void FileSysDatabase::loadRecord(const std::string& recordID) {
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDatabase::sync() {
+void
+FileSysDatabase::sync() {
   try {
     for (auto it = recordCache.begin(); it != recordCache.end(); ++it) {
       auto rec = it->second;
@@ -115,7 +122,8 @@ void FileSysDatabase::sync() {
 }
 
 //-----------------------------------------------------------------------------
-bool FileSysDatabase::remove(const std::string& recordID) {
+bool
+FileSysDatabase::remove(const std::string& recordID) {
   bool ok = false;
   auto it = recordCache.find(recordID);
   if (it != recordCache.end()) {
@@ -145,8 +153,9 @@ bool FileSysDatabase::remove(const std::string& recordID) {
 }
 
 //-----------------------------------------------------------------------------
-std::shared_ptr<DBRecord> FileSysDatabase::get(const std::string& recordID,
-                                               const bool add)
+std::shared_ptr<DBRecord>
+FileSysDatabase::get(const std::string& recordID,
+                     const bool add)
 {
   auto it = recordCache.find(recordID);
   if (it != recordCache.end()) {
@@ -160,7 +169,8 @@ std::shared_ptr<DBRecord> FileSysDatabase::get(const std::string& recordID,
 }
 
 //-----------------------------------------------------------------------------
-std::vector<std::string> FileSysDatabase::getRecordIDs() {
+std::vector<std::string>
+FileSysDatabase::getRecordIDs() {
   std::vector<std::string> recordIDs;
   recordIDs.reserve(recordCache.size());
   for (auto it = recordCache.begin(); it != recordCache.end(); ++it) {

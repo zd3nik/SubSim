@@ -66,53 +66,44 @@ public: // static methods
 
 //-----------------------------------------------------------------------------
 public: // setters
-  Submarine& setLocation(const Coordinate& coord) noexcept {
+  void setLocation(const Coordinate& coord) noexcept {
     location = coord;
   }
 
-  Submarine& setSurfaceTurnCount(const unsigned count) noexcept {
+  void setSurfaceTurnCount(const unsigned count) noexcept {
     surfaceTurnCount = count;
-    return (*this);
   }
 
-  Submarine& setMaxShields(const unsigned count) noexcept {
+  void setMaxShields(const unsigned count) noexcept {
     maxShields = count;
-    return (*this);
   }
 
-  Submarine& setMaxReactorDamage(const unsigned count) noexcept {
+  void setMaxReactorDamage(const unsigned count) noexcept {
     maxReactorDamage = count;
-    return (*this);
   }
 
-  Submarine& setMaxSonarCharge(const unsigned count) noexcept {
+  void setMaxSonarCharge(const unsigned count) noexcept {
     maxSonarCharge = count;
-    return (*this);
   }
 
-  Submarine& setMaxTorpedoCharge(const unsigned count) noexcept {
+  void setMaxTorpedoCharge(const unsigned count) noexcept {
     maxTorpedoCharge = count;
-    return (*this);
   }
 
-  Submarine& setMaxMineCharge(const unsigned count) noexcept {
+  void setMaxMineCharge(const unsigned count) noexcept {
     maxMineCharge = count;
-    return (*this);
   }
 
-  Submarine& setMaxSprintCharge(const unsigned count) noexcept {
+  void setMaxSprintCharge(const unsigned count) noexcept {
     maxSprintCharge = count;
-    return (*this);
   }
 
-  Submarine& setTorpedoCount(const unsigned count) noexcept {
+  void setTorpedoCount(const unsigned count) noexcept {
     torpedoCount = count;
-    return (*this);
   }
 
-  Submarine& setMineCount(const unsigned count) noexcept {
+  void setMineCount(const unsigned count) noexcept {
     mineCount = count;
-    return (*this);
   }
 
 //-----------------------------------------------------------------------------

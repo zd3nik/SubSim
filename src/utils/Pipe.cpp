@@ -9,7 +9,8 @@
 #include <cstring>
 #include <fcntl.h>
 
-namespace subsim {
+namespace subsim
+{
 
 //-----------------------------------------------------------------------------
 Pipe Pipe::SELF_PIPE;
@@ -22,7 +23,8 @@ static void selfPipeSignal(int sigNumber) {
 }
 
 //-----------------------------------------------------------------------------
-void Pipe::openSelfPipe() {
+void
+Pipe::openSelfPipe() {
   // TODO make thread safe
   if (!SELF_PIPE.canRead() && !SELF_PIPE.canWrite()) {
     SELF_PIPE.open();
@@ -44,7 +46,8 @@ void Pipe::openSelfPipe() {
 }
 
 //-----------------------------------------------------------------------------
-void Pipe::open() {
+void
+Pipe::open() {
   if ((fdRead >= 0) || (fdWrite >= 0)) {
     throw Error("Pipe.open() already open");
   }
@@ -59,13 +62,15 @@ void Pipe::open() {
 }
 
 //-----------------------------------------------------------------------------
-void Pipe::close() noexcept {
+void
+Pipe::close() noexcept {
   closeRead();
   closeWrite();
 }
 
 //-----------------------------------------------------------------------------
-void Pipe::closeRead() noexcept {
+void
+Pipe::closeRead() noexcept {
   if (fdRead >= 0) {
     ::close(fdRead);
     fdRead = -1;
@@ -73,7 +78,8 @@ void Pipe::closeRead() noexcept {
 }
 
 //-----------------------------------------------------------------------------
-void Pipe::closeWrite() noexcept {
+void
+Pipe::closeWrite() noexcept {
   if (fdWrite >= 0) {
     ::close(fdWrite);
     fdWrite = -1;
@@ -81,7 +87,8 @@ void Pipe::closeWrite() noexcept {
 }
 
 //-----------------------------------------------------------------------------
-void Pipe::mergeRead(const int fd) {
+void
+Pipe::mergeRead(const int fd) {
   if (fdRead < 0) {
     throw Error("Pipe.mergeRead() not open");
   }
@@ -94,7 +101,8 @@ void Pipe::mergeRead(const int fd) {
 }
 
 //-----------------------------------------------------------------------------
-void Pipe::mergeWrite(const int fd) {
+void
+Pipe::mergeWrite(const int fd) {
   if (fdWrite < 0) {
     throw Error("Pipe.mergeWrite() not open");
   }
@@ -107,7 +115,8 @@ void Pipe::mergeWrite(const int fd) {
 }
 
 //-----------------------------------------------------------------------------
-void Pipe::writeln(const std::string& str) const {
+void
+Pipe::writeln(const std::string& str) const {
   if (fdWrite < 0) {
     throw Error("Pipe.writeln() not open for writing");
   }

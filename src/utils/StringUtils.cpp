@@ -415,17 +415,20 @@ T convertToInt(const std::string& str, const T def) noexcept {
 }
 
 //-----------------------------------------------------------------------------
-int16_t toInt16(const std::string& str, const int16_t def) noexcept {
+int16_t
+toInt16(const std::string& str, const int16_t def) noexcept {
   return convertToInt(str, def);
 }
 
 //-----------------------------------------------------------------------------
-int32_t toInt32(const std::string& str, const int32_t def) noexcept {
+int32_t
+toInt32(const std::string& str, const int32_t def) noexcept {
   return convertToInt(str, def);
 }
 
 //-----------------------------------------------------------------------------
-int64_t toInt64(const std::string& str, const int64_t def) noexcept {
+int64_t
+toInt64(const std::string& str, const int64_t def) noexcept {
   return convertToInt(str, def);
 }
 
@@ -474,32 +477,38 @@ T convertToUInt(const std::string& str, const T def) noexcept {
 }
 
 //-----------------------------------------------------------------------------
-u_int16_t toUInt16(const std::string& str, const u_int16_t def) noexcept {
+u_int16_t
+toUInt16(const std::string& str, const u_int16_t def) noexcept {
   return convertToUInt(str, def);
 }
 
 //-----------------------------------------------------------------------------
-u_int32_t toUInt32(const std::string& str, const u_int32_t def) noexcept {
+u_int32_t
+toUInt32(const std::string& str, const u_int32_t def) noexcept {
   return convertToUInt(str, def);
 }
 
 //-----------------------------------------------------------------------------
-u_int64_t toUInt64(const std::string& str, const u_int64_t def) noexcept {
+u_int64_t
+toUInt64(const std::string& str, const u_int64_t def) noexcept {
   return convertToUInt(str, def);
 }
 
 //-----------------------------------------------------------------------------
-double toDouble(const std::string& str, const double def) noexcept {
+double
+toDouble(const std::string& str, const double def) noexcept {
   return isFloat(str) ? atof(str.c_str()) : def;
 }
 
 //-----------------------------------------------------------------------------
-float toFloat(const std::string& str, const float def) noexcept {
+float
+toFloat(const std::string& str, const float def) noexcept {
   return isFloat(str) ? strtof(str.c_str(), nullptr) : def;
 }
 
 //-----------------------------------------------------------------------------
-bool toBool(const std::string& str, const bool def) noexcept {
+bool
+toBool(const std::string& str, const bool def) noexcept {
   return (iEqual(str, "true") ||
           iEqual(str, "yes") ||
           iEqual(str, "y") ||
@@ -508,29 +517,34 @@ bool toBool(const std::string& str, const bool def) noexcept {
 }
 
 //-----------------------------------------------------------------------------
-std::string toUpper(std::string str) {
+std::string
+toUpper(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(), toupper);
   return str;
 }
 
 //-----------------------------------------------------------------------------
-std::string toLower(std::string str) {
+std::string
+toLower(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(), tolower);
   return str;
 }
 
 //-----------------------------------------------------------------------------
-std::string toError(const int errorNumber) {
+std::string
+toError(const int errorNumber) {
   return strerror(errorNumber);
 }
 
 //-----------------------------------------------------------------------------
-std::string trimStr(const char* str) {
+std::string
+trimStr(const char* str) {
   return str ? trimStr(std::string(str)) : "";
 }
 
 //-----------------------------------------------------------------------------
-std::string trimStr(const std::string& str) {
+std::string
+trimStr(const std::string& str) {
   std::string result;
   if (str.size()) {
     result.reserve(str.size());
@@ -550,9 +564,10 @@ std::string trimStr(const std::string& str) {
 }
 
 //-----------------------------------------------------------------------------
-std::string replace(const std::string& str,
-                    const std::string& substr,
-                    const std::string& replacement)
+std::string
+replace(const std::string& str,
+        const std::string& substr,
+        const std::string& replacement)
 {
   std::string result;
   if (str.size() && substr.size() && (substr.size() <= str.size())) {

@@ -7,7 +7,8 @@ namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-Coordinate Rectangle::toCoord(const unsigned index) const noexcept {
+Coordinate
+Rectangle::toCoord(const unsigned index) const noexcept {
   if (isValid()) {
     Coordinate coord(((index % width) + 1), ((index / height) + 1));
     if (contains(coord)) {
@@ -18,14 +19,16 @@ Coordinate Rectangle::toCoord(const unsigned index) const noexcept {
 }
 
 //-----------------------------------------------------------------------------
-unsigned Rectangle::toIndex(const Coordinate& coord) const noexcept {
+unsigned
+Rectangle::toIndex(const Coordinate& coord) const noexcept {
   return contains(coord)
       ? ((coord.getX() - 1) + (width * (coord.getY() - 1)))
       : ~0U;
 }
 
 //-----------------------------------------------------------------------------
-bool Rectangle::arrangeChildren(std::vector<Rectangle*>& children) const noexcept {
+bool
+Rectangle::arrangeChildren(std::vector<Rectangle*>& children) const noexcept {
   Coordinate topLeft(begin);
   Coordinate bottomRight;
   unsigned height = 1;

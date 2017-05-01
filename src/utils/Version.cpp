@@ -14,7 +14,7 @@ const Version Version::MIN_VERSION(0);
 const Version Version::MAX_VERSION(~0U, ~0U, ~0U);
 
 //-----------------------------------------------------------------------------
-unsigned addOther(CSVWriter& ver, std::string& other) {
+static unsigned addOther(CSVWriter& ver, std::string& other) {
   CSVReader row(other);
   row.setDelimiter('.').setTrim(true);
 

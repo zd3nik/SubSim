@@ -13,7 +13,8 @@ namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-char Input::readChar(const int fd) {
+char
+Input::readChar(const int fd) {
   if (fd < 0) {
     throw Error(Msg() << "Input.readChar() invalid handle: " << fd);
   }
@@ -29,7 +30,8 @@ char Input::readChar(const int fd) {
 }
 
 //-----------------------------------------------------------------------------
-ControlKey Input::readKey(const int fd, char& ch) {
+ControlKey
+Input::readKey(const int fd, char& ch) {
   ch = readChar(fd);
 
   switch (lastChar) {
@@ -100,7 +102,8 @@ ControlKey Input::readKey(const int fd, char& ch) {
 }
 
 //-----------------------------------------------------------------------------
-bool Input::waitForData(std::set<int>& ready, const int timeout_ms) {
+bool
+Input::waitForData(std::set<int>& ready, const int timeout_ms) {
   ready.clear();
   if (handles.empty()) {
     Logger::warn() << "No input handles specified to wait for";
@@ -155,7 +158,8 @@ bool Input::waitForData(std::set<int>& ready, const int timeout_ms) {
 }
 
 //-----------------------------------------------------------------------------
-unsigned Input::readln(const int fd, const char delimeter) {
+unsigned
+Input::readln(const int fd, const char delimeter) {
   if (fd < 0) {
     throw Error(Msg() << "Input readln() invalid handle: " << fd);
   }
@@ -208,7 +212,8 @@ unsigned Input::readln(const int fd, const char delimeter) {
 }
 
 //-----------------------------------------------------------------------------
-void Input::addHandle(const int handle, const std::string& label) {
+void
+Input::addHandle(const int handle, const std::string& label) {
   if (handle >= 0) {
     handles[handle] = label;
     Logger::debug() << "Added channel " << handle << " " << label;
@@ -216,7 +221,8 @@ void Input::addHandle(const int handle, const std::string& label) {
 }
 
 //-----------------------------------------------------------------------------
-void Input::removeHandle(const int handle) {
+void
+Input::removeHandle(const int handle) {
   Logger::debug() << "Removing channel " << handle << " "
                   << getHandleLabel(handle);
 
@@ -242,12 +248,14 @@ void Input::removeHandle(const int handle) {
 }
 
 //-----------------------------------------------------------------------------
-bool Input::containsHandle(const int handle) const {
+bool
+Input::containsHandle(const int handle) const {
   return ((handle >= 0) && (handles.count(handle) > 0));
 }
 
 //-----------------------------------------------------------------------------
-std::string Input::getHandleLabel(const int handle) const {
+std::string
+Input::getHandleLabel(const int handle) const {
   auto it = handles.find(handle);
   if (it != handles.end()) {
     return it->second;
@@ -256,24 +264,28 @@ std::string Input::getHandleLabel(const int handle) const {
 }
 
 //-----------------------------------------------------------------------------
-unsigned Input::getHandleCount() const noexcept {
+unsigned
+Input::getHandleCount() const noexcept {
   return handles.size();
 }
 
 //-----------------------------------------------------------------------------
-unsigned Input::getFieldCount() const noexcept {
+unsigned
+Input::getFieldCount() const noexcept {
   return fields.size();
 }
 
 //-----------------------------------------------------------------------------
-std::string Input::getLine(const bool trim) const {
+std::string
+Input::getLine(const bool trim) const {
   return trim ? trimStr(line.data()) : std::string(line.data());
 }
 
 //-----------------------------------------------------------------------------
-std::string Input::getStr(const unsigned index,
-                          const std::string& def,
-                          const bool trim) const
+std::string
+Input::getStr(const unsigned index,
+              const std::string& def,
+              const bool trim) const
 {
   if (index >= fields.size()) {
     return def;
@@ -283,25 +295,29 @@ std::string Input::getStr(const unsigned index,
 }
 
 //-----------------------------------------------------------------------------
-int Input::getInt(const unsigned index, const int def) const {
+int
+Input::getInt(const unsigned index, const int def) const {
   const std::string str = getStr(index);
   return isInt(str) ? toInt32(str) : def;
 }
 
 //-----------------------------------------------------------------------------
-unsigned Input::getUInt(const unsigned index, const unsigned def) const {
+unsigned
+Input::getUInt(const unsigned index, const unsigned def) const {
   const std::string str = getStr(index);
   return isUInt(str) ? toUInt32(str) : def;
 }
 
 //-----------------------------------------------------------------------------
-double Input::getDouble(const unsigned index, const double def) const {
+double
+Input::getDouble(const unsigned index, const double def) const {
   const std::string str = getStr(index);
   return isFloat(str) ? toDouble(str) : def;
 }
 
 //-----------------------------------------------------------------------------
-bool Input::bufferData(const int fd) {
+bool
+Input::bufferData(const int fd) {
   pos[fd] = len[fd] = 0;
   while (len[fd] < BUFFER_SIZE) {
     ssize_t n = read(fd, buffer[fd].data(), BUFFER_SIZE);

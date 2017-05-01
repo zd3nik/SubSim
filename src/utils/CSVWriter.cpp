@@ -8,39 +8,39 @@ namespace subsim
 
 //-----------------------------------------------------------------------------
 CSVWriter::CSVWriter(const CSVWriter& other)
-    : trim(other.trim),
-      delim(other.delim),
-      cellCount(other.cellCount)
+  : trim(other.trim),
+    delim(other.delim),
+    cellCount(other.cellCount)
 {
-    const std::string s = other.row.str();
-    if (s.size()) {
-        row << s;
-    }
+  const std::string s = other.row.str();
+  if (s.size()) {
+    row << s;
+  }
 }
 
 //-----------------------------------------------------------------------------
 CSVWriter&
 CSVWriter::operator=(const CSVWriter& other) {
-    trim = other.trim;
-    delim = other.delim;
-    cellCount = other.cellCount;
+  trim = other.trim;
+  delim = other.delim;
+  cellCount = other.cellCount;
 
-    const std::string s = other.row.str();
-    if (s.size()) {
-        row << s;
-    }
+  const std::string s = other.row.str();
+  if (s.size()) {
+    row << s;
+  }
 
-    return (*this);
+  return (*this);
 }
 
 //-----------------------------------------------------------------------------
 CSVWriter&
 CSVWriter::writeCell(const std::string& str) {
-    if (cellCount++ && delim) {
-        row << delim;
-    }
-    row << str;
-    return (*this);
+  if (cellCount++ && delim) {
+    row << delim;
+  }
+  row << str;
+  return (*this);
 }
 
 } // namespace subsim

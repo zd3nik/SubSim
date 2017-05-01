@@ -16,7 +16,8 @@ namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-std::string ShellProcess::joinStr(const std::vector<std::string>& strings) {
+std::string
+ShellProcess::joinStr(const std::vector<std::string>& strings) {
   CSVWriter csv(' ', true);
   for (auto& str : strings) {
     if (contains(str, " ")) {
@@ -29,7 +30,8 @@ std::string ShellProcess::joinStr(const std::vector<std::string>& strings) {
 }
 
 //-----------------------------------------------------------------------------
-std::vector<std::string> ShellProcess::splitStr(const std::string& str) {
+std::vector<std::string>
+ShellProcess::splitStr(const std::string& str) {
   return CSVReader(str, ' ', true).readCells(); // TODO handle quoting and escaped chars
 }
 
@@ -71,7 +73,8 @@ ShellProcess::ShellProcess(const IOType ioType,
 }
 
 //-----------------------------------------------------------------------------
-void ShellProcess::close() noexcept {
+void
+ShellProcess::close() noexcept {
   inPipe.close();
   outPipe.close();
   errPipe.close();
@@ -93,7 +96,8 @@ static bool unsafe(const std::string& str) {
 }
 
 //-----------------------------------------------------------------------------
-void ShellProcess::validate() const {
+void
+ShellProcess::validate() const {
   if (isEmpty(alias)) {
     throw Error("ShellProcess() empty alias");
   }
@@ -122,7 +126,8 @@ void ShellProcess::validate() const {
 }
 
 //-----------------------------------------------------------------------------
-void ShellProcess::run() {
+void
+ShellProcess::run() {
   if (childPid >= 0) {
     throw Error(Msg() << "ShellProcess(" << alias
                 << ") is already running on PID " << childPid);
@@ -154,7 +159,8 @@ void ShellProcess::run() {
 }
 
 //-----------------------------------------------------------------------------
-void ShellProcess::runChild() {
+void
+ShellProcess::runChild() {
   assert(childPid == 0);
   const int pid = getpid();
   try {
@@ -220,12 +226,14 @@ void ShellProcess::runChild() {
 }
 
 //-----------------------------------------------------------------------------
-std::string ShellProcess::readln(const Milliseconds timeout) const {
+std::string
+ShellProcess::readln(const Milliseconds timeout) const {
   return readln(inPipe.getReadHandle(), timeout);
 }
 
 //-----------------------------------------------------------------------------
-std::string ShellProcess::readln(const int fd, const Milliseconds timeout)
+std::string
+ShellProcess::readln(const int fd, const Milliseconds timeout)
 const {
   timeval* tmout = nullptr;
   timeval tv;
@@ -283,7 +291,8 @@ const {
 }
 
 //-----------------------------------------------------------------------------
-void ShellProcess::runParent() {
+void
+ShellProcess::runParent() {
   ASSERT(childPid > 0);
 
   Logger::debug() << "ShellProcess(" << alias << ").runParent(" << childPid
@@ -315,7 +324,8 @@ void ShellProcess::runParent() {
 }
 
 //-----------------------------------------------------------------------------
-void ShellProcess::sendln(const std::string& line) const {
+void
+ShellProcess::sendln(const std::string& line) const {
   if (childPid <= 0) {
     throw Error(Msg() << "ShellProcess(" << alias << ").sendln(" << childPid
                 << ',' << line.substr(0, 20) << ") process is not running");
@@ -337,7 +347,8 @@ void ShellProcess::sendln(const std::string& line) const {
 }
 
 //-----------------------------------------------------------------------------
-int ShellProcess::getInputHandle() const {
+int
+ShellProcess::getInputHandle() const {
   if (childPid <= 0) {
     throw Error(Msg() << "ShellProcess(" << alias
                 << ").getInputHandle() process is not running");
@@ -357,12 +368,14 @@ int ShellProcess::getInputHandle() const {
 }
 
 //-----------------------------------------------------------------------------
-bool ShellProcess::isRunning() const noexcept {
+bool
+ShellProcess::isRunning() const noexcept {
   return ((childPid > 0) && (::kill(childPid, 0) == 0));
 }
 
 //-----------------------------------------------------------------------------
-bool ShellProcess::waitForExit(const Milliseconds timeout) noexcept {
+bool
+ShellProcess::waitForExit(const Milliseconds timeout) noexcept {
   if (childPid <= 0) {
     return true;
   }

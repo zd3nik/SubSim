@@ -53,11 +53,11 @@ Submarine::Submarine(const unsigned playerID,
 std::string
 Submarine::equipmentName(const Equipment equip) {
   switch (equip) {
-    case None:    return "None";
-    case Sonar:   return "Sonar";
-    case Torpedo: return "Torpedo";
-    case Mine:    return "Mine";
-    case Sprint:  return "Sprint";
+  case None:    return "None";
+  case Sonar:   return "Sonar";
+  case Torpedo: return "Torpedo";
+  case Mine:    return "Mine";
+  case Sprint:  return "Sprint";
   }
   throw Error(Msg() << "Invalid submarine equipment type: "
               << static_cast<unsigned>(equip));

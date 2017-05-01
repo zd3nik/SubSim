@@ -34,7 +34,8 @@ static Rectangle GetScreenDimensions() {
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::get(const bool update) {
+Screen&
+Screen::get(const bool update) {
   if (update || !instance) {
     instance.reset(new Screen(GetScreenDimensions()));
   }
@@ -42,7 +43,8 @@ Screen& Screen::get(const bool update) {
 }
 
 //-----------------------------------------------------------------------------
-const char* Screen::colorCode(const ScreenColor color) {
+const char*
+Screen::colorCode(const ScreenColor color) {
   switch (color) {
   case Red:     return "\033[0;31m";
   case Green:   return "\033[0;32m";
@@ -58,47 +60,56 @@ const char* Screen::colorCode(const ScreenColor color) {
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::clear() {
+Screen&
+Screen::clear() {
   return str("\033[2J");
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::clearLine() {
+Screen&
+Screen::clearLine() {
   return str("\033[2K");
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::clearToLineBegin() {
+Screen&
+Screen::clearToLineBegin() {
   return str("\033[1K");
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::clearToLineEnd() {
+Screen&
+Screen::clearToLineEnd() {
   return str("\033[0K");
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::clearToScreenBegin() {
+Screen&
+Screen::clearToScreenBegin() {
   return str("\033[1J");
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::clearToScreenEnd() {
+Screen&
+Screen::clearToScreenEnd() {
   return str("\033[0J");
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::color(const ScreenColor color) {
+Screen&
+Screen::color(const ScreenColor color) {
   return str(colorCode(color));
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::cursor(const Coordinate& coord) {
+Screen&
+Screen::cursor(const Coordinate& coord) {
   return cursor(coord.getX(), coord.getY());
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::cursor(const unsigned x, const unsigned y) {
+Screen&
+Screen::cursor(const unsigned x, const unsigned y) {
   if (!contains(x, y)) {
     Logger::error() << "invalid screen coordinates: " << x << ',' << y;
     return (*this);
@@ -107,7 +118,8 @@ Screen& Screen::cursor(const unsigned x, const unsigned y) {
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::flag(const ScreenFlag flag) {
+Screen&
+Screen::flag(const ScreenFlag flag) {
   switch (flag) {
   case EL:                 return ch('\n');
   case Flush:              return flush();
@@ -124,7 +136,8 @@ Screen& Screen::flag(const ScreenFlag flag) {
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::flush() {
+Screen&
+Screen::flush() {
   if (fflush(stdout)) {
     throw Error(Msg() << "Screen flush failed: " << toError(errno));
   }
@@ -132,7 +145,8 @@ Screen& Screen::flush() {
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::str(const std::string& x) {
+Screen&
+Screen::str(const std::string& x) {
   if (fwrite(x.c_str(), x.size(), 1, stdout) < 0) {
     throw Error(Msg() << "Failed to print to screen: " << toError(errno));
   }
@@ -140,7 +154,8 @@ Screen& Screen::str(const std::string& x) {
 }
 
 //-----------------------------------------------------------------------------
-Screen& Screen::ch(const char x) {
+Screen&
+Screen::ch(const char x) {
   if (x && (fputc(x, stdout) != x)) {
     throw Error(Msg() << "Failed to print to screen: " << toError(errno));
   }

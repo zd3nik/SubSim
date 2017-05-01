@@ -95,9 +95,9 @@ GameMap::updateDistance(Square& origin,
 
   std::vector<unsigned> destinations;
   for (Direction dir : { Direction::North,
-                         Direction::East,
-                         Direction::South,
-                         Direction::West })
+       Direction::East,
+       Direction::South,
+       Direction::West })
   {
     const unsigned destIndex = toIndex(square + dir);
     if (destIndex < squares.size()) {

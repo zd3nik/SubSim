@@ -1,8 +1,8 @@
 //-----------------------------------------------------------------------------
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
-#ifndef SUBSIM_TCP_SOCKET_H
-#define SUBSIM_TCP_SOCKET_H
+#ifndef SUBSIM_SOCKET_H
+#define SUBSIM_SOCKET_H
 
 #include "Platform.h"
 #include "Printable.h"
@@ -11,7 +11,7 @@ namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-class TcpSocket : public Printable {
+class Socket : public Printable {
 //-----------------------------------------------------------------------------
 private: // variables
   std::string label;
@@ -22,15 +22,15 @@ private: // variables
 
 //-----------------------------------------------------------------------------
 public: // constructors
-  TcpSocket() = default;
-  TcpSocket(TcpSocket&& other) noexcept;
-  TcpSocket(const TcpSocket&) = delete;
-  TcpSocket& operator=(TcpSocket&& other) noexcept;
-  TcpSocket& operator=(const TcpSocket&) = delete;
+  Socket() = default;
+  Socket(Socket&& other) noexcept;
+  Socket(const Socket&) = delete;
+  Socket& operator=(Socket&& other) noexcept;
+  Socket& operator=(const Socket&) = delete;
 
 //-----------------------------------------------------------------------------
 private: // constructors
-  explicit TcpSocket(const std::string& address,
+  explicit Socket(const std::string& address,
                      const int port,
                      const int handle) noexcept
     : address(address),
@@ -41,7 +41,7 @@ private: // constructors
 
 //-----------------------------------------------------------------------------
 public: // destructor
-  virtual ~TcpSocket() noexcept { close(); }
+  virtual ~Socket() noexcept { close(); }
 
 //-----------------------------------------------------------------------------
 public: // static methods
@@ -66,9 +66,9 @@ public: // methods
 
   bool send(const std::string&) const;
   void close() noexcept;
-  TcpSocket accept() const;
-  TcpSocket& connect(const std::string& hostAddress, const int port);
-  TcpSocket& listen(const std::string& bindAddress,
+  Socket accept() const;
+  Socket& connect(const std::string& hostAddress, const int port);
+  Socket& listen(const std::string& bindAddress,
                     const int port,
                     const int backlog = 10);
 
@@ -76,7 +76,7 @@ public: // methods
 public: // operator overloads
   explicit operator bool() const noexcept { return isOpen(); }
 
-  bool operator==(const TcpSocket& other) const noexcept {
+  bool operator==(const Socket& other) const noexcept {
     return ((handle >= 0) && (handle == other.handle));
   }
 
@@ -87,4 +87,4 @@ private: // methods
 
 } // namespace subsim
 
-#endif // SUBSIM_TCP_SOCKET_H
+#endif // SUBSIM_SOCKET_H

@@ -8,7 +8,8 @@ namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-std::vector<int> DBRecord::getInts(const std::string& fld) const {
+std::vector<int>
+DBRecord::getInts(const std::string& fld) const {
   std::vector<std::string> strValues = getStrings(fld);
   std::vector<int> values;
   values.reserve(strValues.size());
@@ -19,29 +20,34 @@ std::vector<int> DBRecord::getInts(const std::string& fld) const {
 }
 
 //-----------------------------------------------------------------------------
-int DBRecord::getInt(const std::string& fld) const {
+int
+DBRecord::getInt(const std::string& fld) const {
   return toInt32(getString(fld));
 }
 
 //-----------------------------------------------------------------------------
-int DBRecord::incInt(const std::string& fld, const int inc) {
+int
+DBRecord::incInt(const std::string& fld, const int inc) {
   int val = getInt(fld);
   setInt(fld, (val + inc));
   return (val + inc);
 }
 
 //-----------------------------------------------------------------------------
-void DBRecord::setInt(const std::string& fld, const int val) {
+void
+DBRecord::setInt(const std::string& fld, const int val) {
   setString(fld, toStr(val));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::addInt(const std::string& fld, const int val) {
+unsigned
+DBRecord::addInt(const std::string& fld, const int val) {
   return addString(fld, toStr(val));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::addInts(const std::string& fld, const std::vector<int>& values) {
+unsigned
+DBRecord::addInts(const std::string& fld, const std::vector<int>& values) {
   std::vector<std::string> strValues;
   strValues.reserve(values.size());
   for (const auto& val : values) {
@@ -51,7 +57,8 @@ unsigned DBRecord::addInts(const std::string& fld, const std::vector<int>& value
 }
 
 //-----------------------------------------------------------------------------
-std::vector<unsigned> DBRecord::getUInts(const std::string& fld) const {
+std::vector<unsigned>
+DBRecord::getUInts(const std::string& fld) const {
   std::vector<std::string> strValues = getStrings(fld);
   std::vector<unsigned> values;
   values.reserve(strValues.size());
@@ -62,30 +69,35 @@ std::vector<unsigned> DBRecord::getUInts(const std::string& fld) const {
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::getUInt(const std::string& fld) const {
+unsigned
+DBRecord::getUInt(const std::string& fld) const {
   return toUInt32(getString(fld));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::incUInt(const std::string& fld, const unsigned inc) {
+unsigned
+DBRecord::incUInt(const std::string& fld, const unsigned inc) {
   unsigned val = getUInt(fld);
   setUInt(fld, (val + inc));
   return (val + inc);
 }
 
 //-----------------------------------------------------------------------------
-void DBRecord::setUInt(const std::string& fld, const unsigned val) {
+void
+DBRecord::setUInt(const std::string& fld, const unsigned val) {
   setString(fld, toStr(val));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::addUInt(const std::string& fld, const unsigned val) {
+unsigned
+DBRecord::addUInt(const std::string& fld, const unsigned val) {
   return addString(fld, toStr(val));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::addUInts(const std::string& fld,
-                       const std::vector<unsigned>& values)
+unsigned
+DBRecord::addUInts(const std::string& fld,
+                   const std::vector<unsigned>& values)
 {
   std::vector<std::string> strValues;
   strValues.reserve(values.size());
@@ -96,7 +108,8 @@ unsigned DBRecord::addUInts(const std::string& fld,
 }
 
 //-----------------------------------------------------------------------------
-std::vector<u_int64_t> DBRecord::getUInt64s(const std::string& fld) const {
+std::vector<u_int64_t>
+DBRecord::getUInt64s(const std::string& fld) const {
   std::vector<std::string> strValues = getStrings(fld);
   std::vector<u_int64_t> values;
   values.reserve(strValues.size());
@@ -107,30 +120,35 @@ std::vector<u_int64_t> DBRecord::getUInt64s(const std::string& fld) const {
 }
 
 //-----------------------------------------------------------------------------
-u_int64_t DBRecord::getUInt64(const std::string& fld) const {
+u_int64_t
+DBRecord::getUInt64(const std::string& fld) const {
   return toUInt64(getString(fld));
 }
 
 //-----------------------------------------------------------------------------
-u_int64_t DBRecord::incUInt64(const std::string& fld, const u_int64_t inc) {
+u_int64_t
+DBRecord::incUInt64(const std::string& fld, const u_int64_t inc) {
   u_int64_t val = getUInt64(fld);
   setUInt64(fld, (val + inc));
   return (val + inc);
 }
 
 //-----------------------------------------------------------------------------
-void DBRecord::setUInt64(const std::string& fld, const u_int64_t val) {
+void
+DBRecord::setUInt64(const std::string& fld, const u_int64_t val) {
   setString(fld, toStr(val));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::addUInt64(const std::string& fld, const u_int64_t val) {
+unsigned
+DBRecord::addUInt64(const std::string& fld, const u_int64_t val) {
   return addString(fld, toStr(val));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::addUInt64s(const std::string& fld,
-                         const std::vector<u_int64_t>& values)
+unsigned
+DBRecord::addUInt64s(const std::string& fld,
+                     const std::vector<u_int64_t>& values)
 {
   std::vector<std::string> strValues;
   strValues.reserve(values.size());
@@ -141,7 +159,8 @@ unsigned DBRecord::addUInt64s(const std::string& fld,
 }
 
 //-----------------------------------------------------------------------------
-std::vector<bool> DBRecord::getBools(const std::string& fld) const {
+std::vector<bool>
+DBRecord::getBools(const std::string& fld) const {
   std::vector<std::string> strValues = getStrings(fld);
   std::vector<bool> values;
   values.reserve(strValues.size());
@@ -152,23 +171,27 @@ std::vector<bool> DBRecord::getBools(const std::string& fld) const {
 }
 
 //-----------------------------------------------------------------------------
-bool DBRecord::getBool(const std::string& fld) const {
+bool
+DBRecord::getBool(const std::string& fld) const {
   return toBool(getString(fld));
 }
 
 //-----------------------------------------------------------------------------
-void DBRecord::setBool(const std::string& fld, const bool val) {
+void
+DBRecord::setBool(const std::string& fld, const bool val) {
   setString(fld, toStr(val));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::addBool(const std::string& fld, const bool val) {
+unsigned
+DBRecord::addBool(const std::string& fld, const bool val) {
   return addString(fld, toStr(val));
 }
 
 //-----------------------------------------------------------------------------
-unsigned DBRecord::addBools(const std::string& fld,
-                       const std::vector<bool>& values)
+unsigned
+DBRecord::addBools(const std::string& fld,
+                   const std::vector<bool>& values)
 {
   std::vector<std::string> strValues;
   strValues.reserve(values.size());

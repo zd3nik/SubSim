@@ -64,7 +64,7 @@ private: // methods
     sendToAll(p.toString());
   }
 
-  bool send(Board& recipient, const Printable& p) {
+  bool send(Player& recipient, const Printable& p) {
     return send(recipient, p.toString());
   }
 
@@ -80,11 +80,11 @@ private: // methods
   bool isUserHandle(const int) const;
   bool isValidPlayerName(const std::string&) const;
   bool quitGame(Coordinate);
-  bool sendBoard(Board& recipient, const Board&);
-  bool sendGameInfo(Board&);
-  bool sendYourBoard(Board&);
+  bool sendBoard(Player& recipient, const Player&);
+  bool sendGameInfo(Player&);
+  bool sendYourBoard(Player&);
   bool waitForInput(const int timeout = -1);
-  bool send(Board& recipient, const std::string& msg,
+  bool send(Player& recipient, const std::string& msg,
             const bool removeOnFailure = true);
 
   void addPlayerHandle();
@@ -96,26 +96,26 @@ private: // methods
   void close();
   void handlePlayerInput(const int handle);
   void joinGame(BoardPtr&);
-  void leaveGame(Board&);
+  void leaveGame(Player&);
   void nextTurn();
-  void ping(Board&);
+  void ping(Player&);
   void printGameInfo(Coordinate&);
   void printOptions(Coordinate&);
   void printPlayers(Coordinate&);
-  void rejoinGame(Board&);
+  void rejoinGame(Player&);
   void removeNewBoard(const int);
-  void removePlayer(Board&, const std::string& msg = "");
+  void removePlayer(Player&, const std::string& msg = "");
   void saveResult();
-  void sendBoardToAll(const Board&);
+  void sendBoardToAll(const Player&);
   void sendGameResults();
-  void sendMessage(Board&);
+  void sendMessage(Player&);
   void sendMessage(Coordinate);
   void sendStart();
   void sendToAll(const std::string& msg);
-  void setTaunt(Board&);
-  void shoot(Board&);
+  void setTaunt(Player&);
+  void shoot(Player&);
   void skipBoard(Coordinate);
-  void skipTurn(Board&);
+  void skipTurn(Player&);
   void startGame(Coordinate);
   void startListening(const int backlog);
 };

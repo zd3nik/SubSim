@@ -26,13 +26,15 @@ FileSysDBRecord::FileSysDBRecord(const std::string& recordID,
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDBRecord::clear() {
+void
+FileSysDBRecord::clear() {
   fieldCache.clear();
   dirty = true;
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDBRecord::load() {
+void
+FileSysDBRecord::load() {
   if (recordID.empty()) {
     throw Error(Msg() << "Empty " << (*this) << " record ID");
   } else if (filePath.empty()) {
@@ -82,7 +84,8 @@ void FileSysDBRecord::load() {
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDBRecord::store(const bool force) {
+void
+FileSysDBRecord::store(const bool force) {
   if ((dirty | force) && recordID.size() && filePath.size()) {
     std::ofstream file(filePath.c_str());
     if (!file) {
@@ -105,7 +108,8 @@ void FileSysDBRecord::store(const bool force) {
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDBRecord::clear(const std::string& fieldName) {
+void
+FileSysDBRecord::clear(const std::string& fieldName) {
   const std::string fld = validate(fieldName);
   auto it = fieldCache.find(fld);
   if (it != fieldCache.end()) {
@@ -115,7 +119,8 @@ void FileSysDBRecord::clear(const std::string& fieldName) {
 }
 
 //-----------------------------------------------------------------------------
-StringVector FileSysDBRecord::getStrings(const std::string& fieldName) const {
+StringVector
+FileSysDBRecord::getStrings(const std::string& fieldName) const {
   const std::string fld = validate(fieldName);
   auto it = fieldCache.find(fld);
   if (it != fieldCache.end()) {
@@ -125,7 +130,8 @@ StringVector FileSysDBRecord::getStrings(const std::string& fieldName) const {
 }
 
 //-----------------------------------------------------------------------------
-std::string FileSysDBRecord::getString(const std::string& fieldName) const {
+std::string
+FileSysDBRecord::getString(const std::string& fieldName) const {
   const std::string fld = validate(fieldName);
   auto it = fieldCache.find(fld);
   if ((it != fieldCache.end()) && (it->second.size())) {
@@ -135,8 +141,9 @@ std::string FileSysDBRecord::getString(const std::string& fieldName) const {
 }
 
 //-----------------------------------------------------------------------------
-void FileSysDBRecord::setString(const std::string& fieldName,
-                                const std::string& val)
+void
+FileSysDBRecord::setString(const std::string& fieldName,
+                           const std::string& val)
 {
   const std::string fld = validate(fieldName, val);
   auto it = fieldCache.find(fld);
@@ -151,8 +158,9 @@ void FileSysDBRecord::setString(const std::string& fieldName,
 }
 
 //-----------------------------------------------------------------------------
-unsigned FileSysDBRecord::addString(const std::string& fieldName,
-                               const std::string& val)
+unsigned
+FileSysDBRecord::addString(const std::string& fieldName,
+                           const std::string& val)
 {
   const std::string fld = validate(fieldName, val);
   auto it = fieldCache.find(fld);
@@ -165,8 +173,9 @@ unsigned FileSysDBRecord::addString(const std::string& fieldName,
 }
 
 //-----------------------------------------------------------------------------
-unsigned FileSysDBRecord::addStrings(const std::string& fieldName,
-                                     const StringVector& values)
+unsigned
+FileSysDBRecord::addStrings(const std::string& fieldName,
+                            const StringVector& values)
 {
   const std::string fld = validate(fieldName);
   auto it = fieldCache.find(fld);
@@ -186,8 +195,9 @@ unsigned FileSysDBRecord::addStrings(const std::string& fieldName,
 }
 
 //-----------------------------------------------------------------------------
-std::string FileSysDBRecord::validate(const std::string& fieldName,
-                                      const std::string& val) const
+std::string
+FileSysDBRecord::validate(const std::string& fieldName,
+                          const std::string& val) const
 {
   const std::string fld = trimStr(fieldName);
   if (fld.empty()) {

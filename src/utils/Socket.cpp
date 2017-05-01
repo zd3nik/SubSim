@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
-#include "TcpSocket.h"
+#include "Socket.h"
 #include "CSVWriter.h"
 #include "Error.h"
 #include "Input.h"
@@ -19,7 +19,8 @@ namespace subsim
 const std::string ANY_ADDRESS("0.0.0.0");
 
 //-----------------------------------------------------------------------------
-std::string TcpSocket::toString() const {
+std::string
+Socket::toString() const {
   CSVWriter params(',', true);
   switch (mode) {
   case Client:
@@ -43,11 +44,11 @@ std::string TcpSocket::toString() const {
   if (handle >= 0) {
     params << ("handle=" + toStr(handle));
   }
-  return ("TcpSocket(" + params.toString() + ')');
+  return ("Socket(" + params.toString() + ')');
 }
 
 //-----------------------------------------------------------------------------
-TcpSocket::TcpSocket(TcpSocket&& other) noexcept
+Socket::Socket(Socket&& other) noexcept
   : label(std::move(other.label)),
     address(std::move(other.address)),
     port(other.port),
@@ -60,7 +61,8 @@ TcpSocket::TcpSocket(TcpSocket&& other) noexcept
 }
 
 //-----------------------------------------------------------------------------
-TcpSocket& TcpSocket::operator=(TcpSocket&& other) noexcept {
+Socket&
+Socket::operator=(Socket&& other) noexcept {
   if (this != &other) {
     close();
     label        = std::move(other.label);
@@ -76,7 +78,8 @@ TcpSocket& TcpSocket::operator=(TcpSocket&& other) noexcept {
 }
 
 //-----------------------------------------------------------------------------
-bool TcpSocket::send(const std::string& msg) const {
+bool
+Socket::send(const std::string& msg) const {
   if ((handle < 0) || (mode == Server)) {
     Logger::error() << "send(" << msg.size() << ',' << msg << ") called on "
                     << (*this);
@@ -110,7 +113,8 @@ bool TcpSocket::send(const std::string& msg) const {
 }
 
 //-----------------------------------------------------------------------------
-void TcpSocket::close() noexcept {
+void
+Socket::close() noexcept {
   if (handle >= 0) {
     if (shutdown(handle, SHUT_RDWR)) {
       try {
@@ -131,7 +135,8 @@ void TcpSocket::close() noexcept {
 }
 
 //-----------------------------------------------------------------------------
-TcpSocket TcpSocket::accept() const {
+Socket
+Socket::accept() const {
   if ((handle < 0) || (mode != Server)) {
     throw Error(Msg() << "accept() called on " << (*this));
   }
@@ -147,7 +152,7 @@ TcpSocket TcpSocket::accept() const {
         Logger::debug() << (*this) << ".accept() interrupted, trying again";
         continue;
       } else if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-        return TcpSocket();
+        return Socket();
       } else {
         throw Error(Msg() << (*this) << ".accept() failed: " << toError(errno));
       }
@@ -157,23 +162,24 @@ TcpSocket TcpSocket::accept() const {
       throw Error(Msg() << (*this) << ".accept() stdin");
     }
 
-    TcpSocket sock(inet_ntoa(addr.sin_addr), port, newHandle);
+    Socket sock(inet_ntoa(addr.sin_addr), port, newHandle);
     Logger::debug() << (*this) << ".accept() " << sock;
     return std::move(sock);
   }
 }
 
 //-----------------------------------------------------------------------------
-TcpSocket& TcpSocket::connect(const std::string& hostAddress,
-                              const int hostPort)
+Socket&
+Socket::connect(const std::string& hostAddress,
+                const int hostPort)
 {
   if (handle >= 0) {
     throw Error(Msg() << "connect(" << hostAddress << ',' << hostPort
                 << ") called on " << (*this));
   } else if (isEmpty(hostAddress)) {
-    throw Error("TcpSocket.connect() empty host address");
+    throw Error("Socket.connect() empty host address");
   } else  if (!isValidPort(hostPort)) {
-    throw Error(Msg() << "TcpSocket.connect() invalid port: " << hostPort);
+    throw Error(Msg() << "Socket.connect() invalid port: " << hostPort);
   }
 
   addrinfo hints;
@@ -185,7 +191,7 @@ TcpSocket& TcpSocket::connect(const std::string& hostAddress,
   std::string portStr = toStr(hostPort);
   int err = getaddrinfo(hostAddress.c_str(), portStr.c_str(), &hints, &result);
   if (err) {
-    throw Error(Msg() << "TcpSocket.connect(" << hostAddress << ',' << hostPort
+    throw Error(Msg() << "Socket.connect(" << hostAddress << ',' << hostPort
                 << ") host lookup failed: " << gai_strerror(err));
   }
 
@@ -205,7 +211,7 @@ TcpSocket& TcpSocket::connect(const std::string& hostAddress,
   result = nullptr;
 
   if (handle < 0) {
-    throw Error(Msg() << "TcpSocket.connect(" << hostAddress << ',' << hostPort
+    throw Error(Msg() << "Socket.connect(" << hostAddress << ',' << hostPort
                 << ") failed: " << (err ? toError(err) : "unknown reason"));
   }
 
@@ -218,17 +224,18 @@ TcpSocket& TcpSocket::connect(const std::string& hostAddress,
 }
 
 //-----------------------------------------------------------------------------
-TcpSocket& TcpSocket::listen(const std::string& bindAddress,
-                             const int bindPort,
-                             const int backlog)
+Socket&
+Socket::listen(const std::string& bindAddress,
+               const int bindPort,
+               const int backlog)
 {
   if (handle >= 0) {
     throw Error(Msg() << "listen(" << bindAddress << ',' << bindPort << ','
-          << backlog << ") called on " << (*this));
+                << backlog << ") called on " << (*this));
   } else if (!isValidPort(bindPort)) {
-    throw Error(Msg() << "TcpSocket.listen() invalid port: " << bindPort);
+    throw Error(Msg() << "Socket.listen() invalid port: " << bindPort);
   } else if (backlog < 1) {
-    throw Error(Msg() << "TcpSocket.listen() invalid backlog: " << backlog);
+    throw Error(Msg() << "Socket.listen() invalid backlog: " << backlog);
   }
 
   sockaddr_in addr;

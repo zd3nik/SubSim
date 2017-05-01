@@ -14,23 +14,23 @@ namespace subsim
 std::string
 GameSetting::typeName(const SettingType type) {
   switch (type) {
-    case None:                return "None";
-    case MinPlayers:          return "MinPlayers";
-    case MaxPlayers:          return "MaxPlayers";
-    case MaxTurns:            return "MaxTurns";
-    case MapSize:             return "MapSize";
-    case Obstacle:            return "Obstacle";
-    case SubsPerPlayer:       return "SubsPerPlayer";
-    case SubStartLocation:    return "SubStartLocation";
-    case SubSurfaceTurnCount: return "SubSurfaceTurnCount";
-    case SubMaxShields:       return "SubMaxShields";
-    case SubMaxReactorDamage: return "SubMaxReactorDamage";
-    case SubMaxSonarCharge:   return "SubMaxSonarCharge";
-    case SubMaxTorpedoCharge: return "SubMaxTorpedoCharge";
-    case SubMaxMineCharge:    return "SubMaxMineCharge";
-    case SubMaxSprintCharge:  return "SubMaxSprintCharge";
-    case SubTorpedoCount:     return "SubTorpedoCount";
-    case SubMineCount:        return "SubMineCount";
+  case None:                return "None";
+  case MinPlayers:          return "MinPlayers";
+  case MaxPlayers:          return "MaxPlayers";
+  case MaxTurns:            return "MaxTurns";
+  case MapSize:             return "MapSize";
+  case Obstacle:            return "Obstacle";
+  case SubsPerPlayer:       return "SubsPerPlayer";
+  case SubStartLocation:    return "SubStartLocation";
+  case SubSurfaceTurnCount: return "SubSurfaceTurnCount";
+  case SubMaxShields:       return "SubMaxShields";
+  case SubMaxReactorDamage: return "SubMaxReactorDamage";
+  case SubMaxSonarCharge:   return "SubMaxSonarCharge";
+  case SubMaxTorpedoCharge: return "SubMaxTorpedoCharge";
+  case SubMaxMineCharge:    return "SubMaxMineCharge";
+  case SubMaxSprintCharge:  return "SubMaxSprintCharge";
+  case SubTorpedoCount:     return "SubTorpedoCount";
+  case SubMineCount:        return "SubMineCount";
   }
   throw Error(Msg() << "Invalid GameSetting type: "
               << static_cast<unsigned>(type));
