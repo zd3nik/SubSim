@@ -21,6 +21,7 @@ public: // enums
     MapSize,
     Obstacle,
     SubsPerPlayer,
+    SubSize,
     SubStartLocation,
     SubSurfaceTurnCount,
     SubMaxShields,
@@ -35,11 +36,17 @@ public: // enums
 
 //-----------------------------------------------------------------------------
 public: // variables
-  const SettingType type = None;
+  SettingType type = None;
   std::vector<std::string> values;
 
 //-----------------------------------------------------------------------------
 public: // constructos
+  GameSetting() = default;
+  GameSetting(GameSetting&&) = default;
+  GameSetting(const GameSetting&) = default;
+  GameSetting& operator=(GameSetting&&) = default;
+  GameSetting& operator=(const GameSetting&) = default;
+
   GameSetting(const SettingType type)
     : type(type)
   { }

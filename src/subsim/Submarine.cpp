@@ -10,32 +10,14 @@ namespace subsim
 
 //-----------------------------------------------------------------------------
 Submarine::Submarine(const unsigned subID,
-                     const unsigned size,
-                     const unsigned surfaceTurnCount,
-                     const unsigned maxShields,
-                     const unsigned maxReactorDamage,
-                     const unsigned maxSonarCharge,
-                     const unsigned maxTorpedoCharge,
-                     const unsigned maxMineCharge,
-                     const unsigned maxSprintCharge,
-                     const unsigned torpedoCount,
-                     const unsigned mineCount) noexcept
-  : Object(~0U, subID, size, true),
-    surfaceTurnCount(surfaceTurnCount),
-    maxShields(maxShields),
-    maxReactorDamage(maxReactorDamage),
-    maxSonarCharge(maxSonarCharge),
-    maxTorpedoCharge(maxTorpedoCharge),
-    maxMineCharge(maxMineCharge),
-    maxSprintCharge(maxSprintCharge),
-    torpedoCount(torpedoCount),
-    mineCount(mineCount)
+                     const unsigned size) noexcept
+  : Object(~0U, subID, size, true)
 { }
 
 //-----------------------------------------------------------------------------
 Submarine::Submarine(const unsigned playerID,
                      const unsigned subID,
-                     const Submarine& sub)
+                     const Submarine& sub) noexcept
   : Object(playerID, subID, sub.getSize(), true),
     surfaceTurnCount(sub.surfaceTurnCount),
     maxShields(sub.maxShields),
@@ -53,11 +35,11 @@ Submarine::Submarine(const unsigned playerID,
 std::string
 Submarine::equipmentName(const Equipment equip) {
   switch (equip) {
-  case None:    return "None";
-  case Sonar:   return "Sonar";
-  case Torpedo: return "Torpedo";
-  case Mine:    return "Mine";
-  case Sprint:  return "Sprint";
+    case None:    return "None";
+    case Sonar:   return "Sonar";
+    case Torpedo: return "Torpedo";
+    case Mine:    return "Mine";
+    case Sprint:  return "Sprint";
   }
   throw Error(Msg() << "Invalid submarine equipment type: "
               << static_cast<unsigned>(equip));

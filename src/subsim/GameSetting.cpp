@@ -14,23 +14,24 @@ namespace subsim
 std::string
 GameSetting::typeName(const SettingType type) {
   switch (type) {
-  case None:                return "None";
-  case MinPlayers:          return "MinPlayers";
-  case MaxPlayers:          return "MaxPlayers";
-  case MaxTurns:            return "MaxTurns";
-  case MapSize:             return "MapSize";
-  case Obstacle:            return "Obstacle";
-  case SubsPerPlayer:       return "SubsPerPlayer";
-  case SubStartLocation:    return "SubStartLocation";
-  case SubSurfaceTurnCount: return "SubSurfaceTurnCount";
-  case SubMaxShields:       return "SubMaxShields";
-  case SubMaxReactorDamage: return "SubMaxReactorDamage";
-  case SubMaxSonarCharge:   return "SubMaxSonarCharge";
-  case SubMaxTorpedoCharge: return "SubMaxTorpedoCharge";
-  case SubMaxMineCharge:    return "SubMaxMineCharge";
-  case SubMaxSprintCharge:  return "SubMaxSprintCharge";
-  case SubTorpedoCount:     return "SubTorpedoCount";
-  case SubMineCount:        return "SubMineCount";
+    case None:                return "None";
+    case MinPlayers:          return "MinPlayers";
+    case MaxPlayers:          return "MaxPlayers";
+    case MaxTurns:            return "MaxTurns";
+    case MapSize:             return "MapSize";
+    case Obstacle:            return "Obstacle";
+    case SubsPerPlayer:       return "SubsPerPlayer";
+    case SubSize:             return "SubSize";
+    case SubStartLocation:    return "SubStartLocation";
+    case SubSurfaceTurnCount: return "SubSurfaceTurnCount";
+    case SubMaxShields:       return "SubMaxShields";
+    case SubMaxReactorDamage: return "SubMaxReactorDamage";
+    case SubMaxSonarCharge:   return "SubMaxSonarCharge";
+    case SubMaxTorpedoCharge: return "SubMaxTorpedoCharge";
+    case SubMaxMineCharge:    return "SubMaxMineCharge";
+    case SubMaxSprintCharge:  return "SubMaxSprintCharge";
+    case SubTorpedoCount:     return "SubTorpedoCount";
+    case SubMineCount:        return "SubMineCount";
   }
   throw Error(Msg() << "Invalid GameSetting type: "
               << static_cast<unsigned>(type));
@@ -45,6 +46,7 @@ GameSetting::getType(const std::string& name) {
   static const std::string eMapSize             = typeName(MapSize);
   static const std::string eObstacle            = typeName(Obstacle);
   static const std::string eSubsPerPlayer       = typeName(SubsPerPlayer);
+  static const std::string eSubSize             = typeName(SubSize);
   static const std::string eSubStartLocation    = typeName(SubStartLocation);
   static const std::string eSubSurfaceTurnCount = typeName(SubSurfaceTurnCount);
   static const std::string eSubMaxShields       = typeName(SubMaxShields);
@@ -68,6 +70,8 @@ GameSetting::getType(const std::string& name) {
     return Obstacle;
   } else if (iEqual(eSubsPerPlayer, name)) {
     return SubsPerPlayer;
+  } else if (iEqual(eSubSize, name)) {
+    return SubSize;
   } else if (iEqual(eSubStartLocation, name)) {
     return SubStartLocation;
   } else if (iEqual(eSubSurfaceTurnCount, name)) {

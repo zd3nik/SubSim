@@ -64,14 +64,14 @@ GameMap::moveObject(const Coordinate& from,
 void
 GameMap::updateDistances(const unsigned maxDist) {
   maxDistance = maxDist;
-  for (Square& square : squares) {
-    square.resetDistances();
+  for (auto& square : squares) {
+    square->resetDistances();
   }
 
-  for (Square& square : squares) {
-    if (square.isOccupied()) {
-      square.setDistanceTo(square, 0);
-      updateDistance(square, square, 1);
+  for (auto& square : squares) {
+    if (square->isOccupied()) {
+      square->setDistanceTo((*square), 0);
+      updateDistance((*square), (*square), 1);
     }
   }
 }

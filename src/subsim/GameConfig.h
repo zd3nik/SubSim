@@ -7,6 +7,7 @@
 #include "utils/Platform.h"
 #include "utils/Coordinate.h"
 #include "utils/Version.h"
+#include "db/DBRecord.h"
 #include "GameSetting.h"
 #include "Submarine.h"
 
@@ -18,6 +19,8 @@ class GameConfig {
 //-----------------------------------------------------------------------------
 public: // constants
   static const unsigned MIN_TURN_COUNT      = 100;
+  static const unsigned MIN_SUB_SIZE        = 50;
+  static const unsigned MAX_SUB_SIZE        = 200;
   static const unsigned MIN_MAP_WIDTH       = 10;
   static const unsigned MIN_MAP_HEIGHT      = 10;
   static const unsigned MAX_MAP_WIDTH       = 200;
@@ -33,16 +36,23 @@ private: // variables
   unsigned mapHeight = 20;
   unsigned subsPerPlayer = 1;
   std::vector<Coordinate> obstacles;
-  std::vector<UniqueSubPtr> submarineConfigs = {std::make_unique<Submarine>(0)};
   std::vector<GameSetting> customSettings;
+  std::vector<Submarine> submarineConfigs;
 
 //-----------------------------------------------------------------------------
-public: // static methods
-  static GameConfig getDefaultGameConfig();
+public: // constructors
+  GameConfig();
+  GameConfig(GameConfig&&) = default;
+  GameConfig(const GameConfig&) = default;
+  GameConfig& operator=(GameConfig&&) = default;
+  GameConfig& operator=(const GameConfig&) = default;
 
 //-----------------------------------------------------------------------------
 public: // methods
-  GameConfig& addCustomSetting(const GameSetting& setting);
+  void addCustomSetting(const GameSetting& setting);
+  void loadFrom(const DBRecord&);
+  void print(Coordinate&) const;
+  void saveTo(DBRecord&) const;
   void validate() const;
 
 //-----------------------------------------------------------------------------
@@ -59,12 +69,12 @@ public: // getters
     return obstacles;
   }
 
-  const std::vector<UniqueSubPtr>& getSubmarineConfigs() const noexcept {
-    return submarineConfigs;
-  }
-
   const std::vector<GameSetting>& getCustomSettings() const noexcept {
     return customSettings;
+  }
+
+  const std::vector<Submarine>& getSubmarineConfigs() const noexcept {
+    return submarineConfigs;
   }
 };
 

@@ -85,10 +85,11 @@ private: // methods
   void clearScreen();
   void close();
   void handlePlayerInput(const int handle);
-  void joinGame(PlayerPtr&);
+  void joinGame(const int handle);
   void printGameInfo(Coordinate&);
   void printOptions(Coordinate&);
   void printPlayers(Coordinate&);
+  void removePlayer(const int handle, const std::string& msg = "");
   void removePlayer(Player&, const std::string& msg = "");
   void removeStagedPlayer(const int);
   void saveResult();

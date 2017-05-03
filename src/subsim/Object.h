@@ -14,18 +14,18 @@ namespace subsim
 class Object : public Printable {
 //-----------------------------------------------------------------------------
 private: // variables
-  const unsigned playerID;
-  const unsigned objectID;
-  const unsigned size;
-  const bool mobile;
+  unsigned playerID;
+  unsigned objectID;
+  unsigned size;
+  bool mobile;
 
 //-----------------------------------------------------------------------------
 public: // constructors
   Object() = delete;
-  Object(Object&&) = delete;
-  Object(const Object&) = delete;
-  Object& operator=(Object&&) = delete;
-  Object& operator=(const Object&) = delete;
+  Object(Object&&) noexcept = default;
+  Object(const Object&) noexcept = default;
+  Object& operator=(Object&&) noexcept = default;
+  Object& operator=(const Object&) noexcept = default;
 
   Object(const unsigned playerID,
          const unsigned objectID,
@@ -53,6 +53,12 @@ public: // getters
 
   unsigned isMobile() const noexcept {
     return mobile;
+  }
+
+//-----------------------------------------------------------------------------
+protected: // setters
+  void setSize(const unsigned value) noexcept {
+    size = value;
   }
 };
 

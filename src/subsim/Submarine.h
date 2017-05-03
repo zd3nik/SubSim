@@ -34,10 +34,10 @@ private: // variables
   unsigned maxTorpedoCharge = 100;
   unsigned maxMineCharge = 3;
   unsigned maxSprintCharge = 9;
+  unsigned shieldCount = maxShields;
   unsigned torpedoCount = 9999;
   unsigned mineCount = 9999;
   unsigned surfaceTurns = 0; // turns remaining until surface maneuver complete
-  unsigned shieldCount = maxShields;
   unsigned reactorDamage = 0;
   unsigned sonarCharge = 0;
   unsigned torpedoCharge = 0;
@@ -49,15 +49,21 @@ private: // variables
 //-----------------------------------------------------------------------------
 public: // constructors
   Submarine() noexcept = default;
-  Submarine(Submarine&&) = delete;
-  Submarine(const Submarine&) = delete;
-  Submarine& operator=(Submarine&&) = delete;
-  Submarine& operator=(const Submarine&) = delete;
+  Submarine(Submarine&&) noexcept = default;
+  Submarine(const Submarine&) noexcept = default;
+  Submarine& operator=(Submarine&&) noexcept = default;
+  Submarine& operator=(const Submarine&) noexcept = default;
 
-  Submarine(const unsigned subID, const unsigned size = 100) noexcept;
+  Submarine(const unsigned subID = 0, const unsigned size = 100) noexcept;
   Submarine(const unsigned playerID,
             const unsigned subID,
             const Submarine& subTemplate) noexcept;
+
+//-----------------------------------------------------------------------------
+public: // Object::Printable implementation
+  std::string toString() const {
+    return ("Submarine(" + toStr(getObjectID()) + ")");
+  }
 
 //-----------------------------------------------------------------------------
 public: // static methods
@@ -68,6 +74,10 @@ public: // static methods
 public: // setters
   void setLocation(const Coordinate& coord) noexcept {
     location = coord;
+  }
+
+  void setSize(const unsigned value) noexcept {
+    Object::setSize(value);
   }
 
   void setSurfaceTurnCount(const unsigned count) noexcept {
@@ -171,10 +181,6 @@ public: // methods
   bool takeReactorDamage(const unsigned damage) noexcept;
   bool takeReactorStrain(const unsigned strain) noexcept;
 };
-
-//-----------------------------------------------------------------------------
-typedef std::unique_ptr<Submarine> UniqueSubPtr;
-typedef std::shared_ptr<Submarine> SubmarinePtr;
 
 } // namespace subsim
 

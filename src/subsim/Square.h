@@ -46,7 +46,7 @@ public: // methods
 
   bool contains(ObjectPtr object) const noexcept {
     Object* ptr = object.get();
-    for (ObjectPtr& obj : objects) {
+    for (ObjectPtr obj : objects) {
       if (obj.get() == ptr) {
         return true;
       }
@@ -54,7 +54,7 @@ public: // methods
     return false;
   }
 
-  void addObject(ObjectPtr object) {
+  bool addObject(ObjectPtr object) {
     if (!contains(object)) {
       objects.push_back(object);
       return true;
@@ -89,11 +89,11 @@ public: // methods
     return objects.size();
   }
 
-  std::list<ObjectPtr> begin() const noexcept {
+  std::list<ObjectPtr>::const_iterator begin() const noexcept {
     return objects.begin();
   }
 
-  std::list<ObjectPtr> end() const noexcept {
+  std::list<ObjectPtr>::const_iterator end() const noexcept {
     return objects.end();
   }
 
@@ -103,7 +103,7 @@ public: // methods
 
   unsigned getDistanceTo(const Coordinate& coord) const {
     auto it = distance.find(coord);
-    return (it == distance.end()) ? ~0U : it.second;
+    return (it == distance.end()) ? ~0U : (*it).second;
   }
 
   void setDistanceTo(const Coordinate& coord, const unsigned dist) {

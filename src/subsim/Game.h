@@ -29,23 +29,14 @@ private: // variables
 
 //-----------------------------------------------------------------------------
 public: // constructors
+  Game() = default;
   Game(Game&&) = delete;
   Game(const Game&) = delete;
   Game& operator=(Game&&) = delete;
   Game& operator=(const Game&) = delete;
 
 //-----------------------------------------------------------------------------
-public: // methods
-  void reset(const GameConfig& gameConfig, const std::string& gameTitle) {
-    title = gameTitle;
-    config = gameConfig;
-    gameMap.reset(config.getMapWidth(), config.getMapHeight());
-    started = 0;
-    aborted = 0;
-    finished = 0;
-    turnNumber = 0;
-  }
-
+public: // inline methods
   const std::string& getTitle() const noexcept { return title; }
   const GameConfig& getConfig() const noexcept { return config; }
   const GameMap& getMap() const noexcept { return gameMap; }
@@ -57,16 +48,50 @@ public: // methods
   unsigned getPlayerCount() const noexcept { return players.size(); }
   unsigned getTurnNumber() const noexcept { return turnNumber; }
 
+  void clearPlayers() { players.clear(); }
+  void reset(const GameConfig& gameConfig, const std::string& gameTitle) {
+    title = gameTitle;
+    config = gameConfig;
+    gameMap.reset(config.getMapWidth(), config.getMapHeight());
+    started = 0;
+    aborted = 0;
+    finished = 0;
+    turnNumber = 0;
+  }
+
   Milliseconds elapsedTime() const noexcept {
     return finished ? (finished - started) : aborted ? (aborted - started) : 0;
   }
 
 //-----------------------------------------------------------------------------
-public: // operator overloads
-  explicit operator bool() const noexcept { return isValid(); }
+public: // submarine command methods
+  void deployMine(const int playerHandle);
+  void fireTorpedo(const int playerHandle);
+  void moveSubmarine(const int playerHandle);
+  void sleep(const int playerHandle);
+  void sonarPing(const int playerHandle);
+  void sprint(const int playerHandle);
+  void surface(const int playerHandle);
 
 //-----------------------------------------------------------------------------
-private: // methods
+public: // other methods
+  PlayerPtr getPlayer(const int playerHandle) const;
+  PlayerPtr getPlayer(const std::string playerName,
+                      const bool exactMatch = true) const;
+
+  std::vector<PlayerPtr> getPlayers() const;
+  std::vector<PlayerPtr> playersForAddress(const std::string address) const;
+
+  void abort() noexcept;
+  void finish() noexcept;
+  void start();
+
+  void addPlayer(PlayerPtr);
+  void removePlayer(const int playerHandle);
+  void saveResults(Database&) const;
+
+//-----------------------------------------------------------------------------
+public: // operator overloads
   bool isValid() const noexcept;
 };
 

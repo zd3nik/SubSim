@@ -89,11 +89,6 @@ Server::init() {
 //-----------------------------------------------------------------------------
 bool
 Server::run() {
-  const GameConfig config = newGameConfig();
-  if (!config) {
-    return false;
-  }
-
   std::string title;
   if (!getGameTitle(title)) {
     return false;
@@ -104,8 +99,8 @@ Server::run() {
     CanonicalMode cmode(false);
     UNUSED(cmode);
 
-    game.reset(config, title);
-    startListening(config.getMaxPlayers() + 2);
+    game.reset(newGameConfig(), title);
+    startListening(game.getConfig().getMaxPlayers());
 
     Coordinate coord;
     while (ok && !game.isFinished()) {
@@ -155,7 +150,7 @@ Server::prompt(Coordinate coord,
 //-----------------------------------------------------------------------------
 GameConfig Server::newGameConfig() {
   const CommandArgs& args = CommandArgs::getInstance();
-  GameConfig config = GameConfig::getDefaultGameConfig();
+  GameConfig config;
 
   std::string str = args.getStrAfter({"-c", "--config"});
   if (str.size()) {
@@ -172,7 +167,8 @@ GameConfig Server::newGameConfig() {
     afterIdx = idx;
   } while (afterIdx >= 0);
 
-  return config;
+  config.validate();
+  return std::move(config);
 }
 
 //-----------------------------------------------------------------------------
@@ -237,6 +233,7 @@ Server::sendGameInfo(Player& recipient) {
       return false;
     }
   }
+  return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -318,7 +315,7 @@ Server::blacklistPlayer(Coordinate coord) {
   }
 
   std::string name;
-  name = prompt(coord, "Enter name or number of player to blacklist -> ");
+  name = prompt(coord, "Enter name of player to blacklist -> ");
   if (name.size()) {
     PlayerPtr player = game.getPlayer(name, false);
     if (player) {
@@ -336,7 +333,7 @@ Server::bootPlayer(Coordinate coord) {
   }
 
   std::string name;
-  name = prompt(coord, "Enter name or number of player to boot -> ");
+  name = prompt(coord, "Enter name of player to boot -> ");
   if (name.size()) {
     PlayerPtr player = game.getPlayer(name, false);
     if (player) {
@@ -373,12 +370,12 @@ Server::clearScreen() {
 //-----------------------------------------------------------------------------
 void
 Server::close() {
-  for (auto& player : game.getPlayers()) {
+  for (const auto& player : game.getPlayers()) {
     input.removeHandle(player->handle());
   }
-  game.clear();
+  game.clearPlayers();
 
-  for (auto& pair : stagedPlayers) {
+  for (const auto& pair : stagedPlayers) {
     input.removeHandle(pair.second->handle());
   }
   stagedPlayers.clear();
@@ -389,41 +386,31 @@ Server::close() {
 //-----------------------------------------------------------------------------
 void
 Server::handlePlayerInput(const int handle) {
-  auto it = stagedPlayers.find(handle);
-  PlayerPtr player = (it == stagedPlayers.end())
-      ? game.getPlayer(handle)
-      : it->second;
-
-  if (!player) {
-    throw Error(Msg() << "Unknown player handle: " << handle);
-  }
-
   if (!input.readln(handle)) {
-    Logger::warn() << "Disconnecting " << (*player);
-    removePlayer(*player);
+    removePlayer(handle);
     return;
   }
 
   std::string str = input.getStr();
   if (str.size() == 1) {
     switch (str[0]) {
-    case 'D': game.deployMine(*player);  return;
-    case 'F': game.fireTorpedo(*player); return;
-    case 'J': joinGame(player);          return;
-    case 'M': game.move(*player);        return;
-    case 'P': game.ping(*player);        return;
-    case 'R': game.sprint(*player);      return;
-    case 'S': game.sleep(*player);       return;
-    case 'U': game.surface(*player);     return;
+    case 'D': game.deployMine(handle);    return;
+    case 'F': game.fireTorpedo(handle);   return;
+    case 'J': joinGame(handle);           return;
+    case 'M': game.moveSubmarine(handle); return;
+    case 'P': game.sonarPing(handle);     return;
+    case 'R': game.sprint(handle);        return;
+    case 'S': game.sleep(handle);         return;
+    case 'U': game.surface(handle);       return;
     default:
       break;
     }
   }
 
-  Logger::debug() << "Invalid message(" << input.getLine() << ") from "
-                  << (*player);
+  Logger::debug() << "Invalid message(" << input.getLine()
+                  << ") from player handle " << handle;
 
-  removePlayer((*player), PROTOCOL_ERROR);
+  removePlayer(handle, PROTOCOL_ERROR);
 }
 
 //-----------------------------------------------------------------------------
@@ -448,7 +435,13 @@ Server::handleUserInput(Coordinate coord) {
 
 //-----------------------------------------------------------------------------
 void
-Server::joinGame(PlayerPtr& player) {
+Server::joinGame(const int handle) {
+  auto it = stagedPlayers.find(handle);
+  if (it == stagedPlayers.end()) {
+    throw Error(Msg() << "Unknown player handle: " << handle);
+  }
+
+  PlayerPtr player = it->second;
   if (!player) {
     throw Error("Server.joinGame() null player");
   } else if (game.getPlayer(player->handle())) {
@@ -476,7 +469,7 @@ Server::joinGame(PlayerPtr& player) {
   } else if (playerName.size() > MAX_PLAYER_NAME_SIZE) {
     removePlayer((*player), NAME_TOO_LONG);
     return;
-  } else if (game.getPlayer(playerName)) {
+  } else if (game.getPlayer(playerName, true)) {
     removePlayer((*player), NAME_IN_USE);
     return;
   }
@@ -517,7 +510,7 @@ Server::printOptions(Coordinate& coord) {
     Screen::print() << coord.south() << "(B)oot Player, Blacklist (P)layer";
   }
 
-  if (game && !game.isStarted()) {
+  if (game.isValid() && !game.isStarted()) {
     Screen::print() << coord.south() << "(S)tart Game";
   }
 
@@ -560,6 +553,23 @@ Server::quitGame(Coordinate coord) {
 
 //-----------------------------------------------------------------------------
 void
+Server::removePlayer(const int handle, const std::string& msg) {
+  auto it = stagedPlayers.find(handle);
+  if (it == stagedPlayers.end()) {
+    removePlayer(*(it->second));
+    if (game.getPlayer(handle)) {
+      throw Error(Msg() << "duplicate player handle: " << handle);
+    }
+  } else {
+    PlayerPtr player = game.getPlayer(handle);
+    if (player) {
+      removePlayer((*player), msg);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
 Server::removePlayer(Player& player, const std::string& msg) {
   const std::string name = player.getName();
   const int handle = player.handle();
@@ -576,7 +586,7 @@ Server::removePlayer(Player& player, const std::string& msg) {
     }
     stagedPlayers.erase(it);
   } else {
-    game.removePlayer(name);
+    game.removePlayer(handle);
   }
 }
 
@@ -604,14 +614,11 @@ void
 Server::sendGameResults() {
   CSVWriter finishMessage = Msg('F')
       << game.getPlayerCount()
-      << game.getTurnCount()
+      << game.getTurnNumber()
       << ((game.isFinished() && !game.isAborted()) ? "finished" : "aborted");
 
   // get local list of players (in case any drop out while sending)
-  std::vector<PlayerPtr> players;
-  for (auto player : game.getPlayers()) {
-    players.push_back(*player);
-  }
+  std::vector<PlayerPtr> players = game.getPlayers();
 
   // send finish message and player result messages to all Players
   for (auto& recipient : players) {
@@ -628,10 +635,7 @@ Server::sendGameResults() {
 void
 Server::sendToAll(const std::string& msg) {
   // get local list of players (in case any drop out while sending)
-  std::vector<PlayerPtr> players;
-  for (auto player : game.getPlayers()) {
-    players.push_back(*player);
-  }
+  std::vector<PlayerPtr> players = game.getPlayers();
 
   for (auto& player : players) {
     if (player->isConnected()) {
@@ -643,9 +647,9 @@ Server::sendToAll(const std::string& msg) {
 //-----------------------------------------------------------------------------
 void
 Server::startGame(Coordinate coord) {
-  if (game && !game.isStarted()) {
+  if (game.isValid() && !game.isStarted()) {
     std::string str = prompt(coord, "Start Game? [y/N] -> ");
-    if (iStartsWith(str, 'Y') && game.start(true)) {
+    if (iStartsWith(str, 'Y')) {
       beginGame();
     }
   }

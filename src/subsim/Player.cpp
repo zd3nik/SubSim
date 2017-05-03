@@ -40,7 +40,7 @@ Player::summary(const unsigned playerNum, const bool gameStarted) const {
 
 //-----------------------------------------------------------------------------
 void
-Player::stealConnectionFrom(Player&& other) {
+Player::stealConnectionFrom(Player& other) {
   if (socket) {
     throw Error(Msg() << (*this) << " stealConnectionFrom(" << other
                 << ") socket already set");
@@ -52,7 +52,7 @@ Player::stealConnectionFrom(Player&& other) {
 
 //-----------------------------------------------------------------------------
 void
-Player::addSubmarine(SubmarinePtr sub) {
+Player::addSubmarine(const Submarine& sub) {
   throw Error("TODO Player::adSubmarine()");
 }
 
@@ -77,9 +77,6 @@ Player::saveTo(DBRecord& rec,
                const bool first,
                const bool last) const
 {
-  const unsigned hits = hitCount();
-  const unsigned misses = missCount();
-
   rec.setString("playerName", getName());
   rec.setString("lastAddress", socket.getAddress());
   rec.setString("lastStatus", status);
