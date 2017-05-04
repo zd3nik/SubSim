@@ -417,7 +417,7 @@ Then each player would attempt to join the game by sending their player name and
 
     Message                          |  Details
     =================================|===================================
-    J|Captain Nimo|13|3|39|10|27|15  |  Player Name       = Captina Nimo
+    J|Captain Nimo|13|3|39|10|27|15  |  Player Name       = Captain Nimo
                                      |  Sub 0 coordinates = 13|3
                                      |  Sub 1 coordinates = 39|10
                                      |  Sub 2 coordinates = 27|15
