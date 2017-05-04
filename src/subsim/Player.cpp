@@ -23,9 +23,9 @@ Player::toString() const {
 
 //-----------------------------------------------------------------------------
 std::string
-Player::summary(const unsigned playerNum, const bool gameStarted) const {
+Player::summary(const bool gameStarted) const {
   std::stringstream ss;
-  ss << playerNum << ": " << socket.getLabel();
+  ss << handle() << ": " << socket.getLabel();
   if (socket) {
     ss << " [" << socket.getAddress() << ']';
   }

@@ -309,7 +309,7 @@ Server::blacklistAddress(Coordinate coord) {
   if (str.size()) {
     blackList.insert(ADDRESS_PREFIX + str);
     for (auto& player : game.playersFromAddress(str)) {
-      removePlayer((*player), BOOTED);
+      removePlayer(*player);
     }
   }
 }
@@ -322,12 +322,15 @@ Server::blacklistPlayer(Coordinate coord) {
   }
 
   std::string name;
-  name = prompt(coord, "Enter name of player to blacklist -> ");
+  name = prompt(coord, "Enter name or number of player to blacklist -> ");
   if (name.size()) {
     PlayerPtr player = game.getPlayer(name);
+    if (!player) {
+      player = game.getPlayer(toInt32(name, -1));
+    }
     if (player) {
       blackList.insert(PLAYER_PREFIX + player->getName());
-      removePlayer((*player), BOOTED);
+      removePlayer(*player);
     }
   }
 }
@@ -340,9 +343,12 @@ Server::bootPlayer(Coordinate coord) {
   }
 
   std::string name;
-  name = prompt(coord, "Enter name of player to boot -> ");
+  name = prompt(coord, "Enter name or number of player to boot -> ");
   if (name.size()) {
     PlayerPtr player = game.getPlayer(name);
+    if (!player) {
+      player = game.getPlayer(toInt32(name, -1));
+    }
     if (player) {
       removePlayer((*player), BOOTED);
     }
@@ -414,7 +420,7 @@ Server::handlePlayerInput(const int handle) {
     }
   }
 
-  Logger::debug() << "Invalid message(" << input.getLine()
+  Logger::error() << "Invalid message(" << input.getLine()
                   << ") from player handle " << handle;
 
   removePlayer(handle, PROTOCOL_ERROR);
@@ -445,7 +451,8 @@ void
 Server::joinGame(const int handle) {
   auto it = stagedPlayers.find(handle);
   if (it == stagedPlayers.end()) {
-    throw Error(Msg() << "Unknown player handle: " << handle);
+    removePlayer(handle, PROTOCOL_ERROR);
+    return;
   }
 
   PlayerPtr player = it->second;
@@ -468,7 +475,7 @@ Server::joinGame(const int handle) {
     removePlayer((*player), PROTOCOL_ERROR);
     return;
   } else if (blackList.count(PLAYER_PREFIX + playerName)) {
-    removePlayer((*player), BOOTED);
+    removePlayer(*player);
     return;
   } else if (!isValidPlayerName(playerName)) {
     removePlayer((*player), INVALID_NAME);
@@ -537,9 +544,8 @@ Server::printPlayers(Coordinate& coord) {
 
   coord.south().setX(3);
 
-  int n = 0;
   for (auto& player : game.getPlayers()) {
-    Screen::print() << coord.south() << player->summary(++n, game.isStarted());
+    Screen::print() << coord.south() << player->summary(game.isStarted());
   }
 
   Screen::print() << coord.south(2).setX(1);
@@ -565,17 +571,22 @@ Server::quitGame(Coordinate coord) {
 //-----------------------------------------------------------------------------
 void
 Server::removePlayer(const int handle, const std::string& msg) {
+  PlayerPtr player = game.getPlayer(handle);
   auto it = stagedPlayers.find(handle);
-  if (it == stagedPlayers.end()) {
-    removePlayer(*(it->second));
-    if (game.getPlayer(handle)) {
-      throw Error(Msg() << "duplicate player handle: " << handle);
-    }
-  } else {
-    PlayerPtr player = game.getPlayer(handle);
+  if (it != stagedPlayers.end()) {
     if (player) {
-      removePlayer((*player), msg);
+      throw Error(Msg() << "duplicated player handle: " << handle);
     }
+    removePlayer(*(it->second));
+  } else if (player) {
+    removePlayer((*player), msg);
+  } else {
+    throw Error(Msg() << "Server::removePlayer() no player for handle "
+                << handle << " found");
+  }
+
+  if (game.getPlayer(handle) || stagedPlayers.count(handle)) {
+    throw Error(Msg() << "failed to remove player handle: " << handle);
   }
 }
 
@@ -598,6 +609,12 @@ Server::removePlayer(Player& player, const std::string& msg) {
     stagedPlayers.erase(it);
   } else {
     game.removePlayer(handle);
+  }
+
+  if (!game.isStarted() && !socket.isOpen() &&
+      (game.getPlayerCount() < game.getConfig().getMaxPlayers()))
+  {
+    startListening(game.getConfig().getMaxPlayers());
   }
 }
 

@@ -48,7 +48,7 @@ public: // methods
     return socket.send(msg);
   }
 
-  std::string summary(const unsigned playerNum, const bool gameStarted) const;
+  std::string summary(const bool gameStarted) const;
   void stealConnectionFrom(Player&);
   void addSubmarine(const Submarine&);
   void addStatsTo(DBRecord&, const bool first, const bool last) const;
