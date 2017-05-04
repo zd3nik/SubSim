@@ -5,6 +5,7 @@
 #define SUBSIM_GAME_SETTING_H
 
 #include "utils/Platform.h"
+#include "utils/StringUtils.h"
 
 namespace subsim
 {
@@ -51,6 +52,34 @@ public: // constructos
   GameSetting(const SettingType type)
     : type(type)
   { }
+
+  GameSetting(const SettingType type, const std::string& stringValue)
+    : type(type)
+  {
+    values.push_back(stringValue);
+  }
+
+  GameSetting(const SettingType type, const unsigned unsignedValue)
+    : type(type)
+  {
+    values.push_back(toStr(unsignedValue));
+  }
+
+  GameSetting(const SettingType type,
+              const std::vector<std::string>& stringValues)
+    : type(type),
+      values(stringValues.begin(), stringValues.end())
+  { }
+
+  GameSetting(const SettingType type,
+              const std::vector<unsigned>& unsignedValues)
+    : type(type)
+  {
+    values.reserve(unsignedValues.size());
+    for (unsigned value : unsignedValues) {
+      values.push_back(toStr(value));
+    }
+  }
 
 //-----------------------------------------------------------------------------
 public: // static methods

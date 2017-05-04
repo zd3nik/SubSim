@@ -6,7 +6,6 @@
 #include "utils/CSVWriter.h"
 #include "utils/Error.h"
 #include "utils/Msg.h"
-#include "utils/StringUtils.h"
 
 namespace subsim
 {

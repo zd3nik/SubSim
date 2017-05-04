@@ -96,7 +96,7 @@ private: // methods
   void sendGameResults();
   void sendToAll(const std::string& msg);
   void startGame(Coordinate);
-  void startListening(const int backlog);
+  void startListening();
   void stopListening();
 };
 

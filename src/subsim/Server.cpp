@@ -99,7 +99,7 @@ Server::run() {
     UNUSED(cmode);
 
     game.reset(newGameConfig(), title);
-    startListening(game.getConfig().getMaxPlayers() + 10);
+    startListening();
 
     Coordinate coord;
     while (ok && !game.isFinished()) {
@@ -149,20 +149,20 @@ GameConfig Server::newGameConfig() {
   const CommandArgs& args = CommandArgs::getInstance();
   GameConfig config;
 
-  std::string str = args.getStrAfter({"-c", "--config"});
-  if (str.size()) {
-    config.loadFrom(FileSysDBRecord(str, str));
-  }
-
-  int idx = -1;
-  int afterIdx = -1;
-  do {
-    str = args.getStrAfter({"-o", "--opt"}, "", afterIdx, nullptr, &idx);
-    if (!isEmpty(str)) {
-      config.addCustomSetting(GameSetting::fromMessage(str));
+  const int count = args.getCount();
+  for (int i = 0; (i + 1) < count; ++i) {
+    if (args.match(i, {"-c", "--config"})) {
+      std::string str = args.get(++i);
+      if (str.size()) {
+        config.loadFrom(FileSysDBRecord(str, str));
+      }
+    } else if (args.match(i, {"-o", "--opt"})) {
+      std::string str = args.get(++i);
+      if (str.size()) {
+        config.addSetting(GameSetting::fromMessage(str));
+      }
     }
-    afterIdx = idx;
-  } while (afterIdx >= 0);
+  }
 
   config.validate();
   return std::move(config);
@@ -612,7 +612,7 @@ Server::removePlayer(Player& player, const std::string& msg) {
   if (!game.isStarted() && !socket.isOpen() &&
       (game.getPlayerCount() < game.getConfig().getMaxPlayers()))
   {
-    startListening(game.getConfig().getMaxPlayers());
+    startListening();
   }
 }
 
@@ -683,7 +683,16 @@ Server::startGame(Coordinate coord) {
 
 //-----------------------------------------------------------------------------
 void
-Server::startListening(const int backlog) {
+Server::startListening() {
+  const int playerCount = static_cast<int>(game.getPlayerCount());
+  int backlog = static_cast<int>(game.getConfig().getMaxPlayers());
+  if (backlog <= 0) {
+    backlog = 10;
+  } else {
+    // backlog = (maxPlayers - playerCount + 1)
+    backlog = std::max<int>(1, (backlog - playerCount + 1));
+  }
+
   const CommandArgs& args = CommandArgs::getInstance();
   const std::string bindAddress = args.getStrAfter({"-b", "--bind-address"});
   int bindPort = args.getIntAfter({"-p", "--port"}, DEFAULT_PORT);
