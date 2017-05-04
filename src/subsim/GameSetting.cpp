@@ -2,6 +2,7 @@
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "GameSetting.h"
+#include "utils/CSVReader.h"
 #include "utils/CSVWriter.h"
 #include "utils/Error.h"
 #include "utils/Msg.h"
@@ -95,6 +96,93 @@ GameSetting::getType(const std::string& name) {
   }
 
   throw Error(Msg() << "Unknown game setting: '" << name << "'");
+}
+
+//-----------------------------------------------------------------------------
+GameSetting
+GameSetting::fromMessage(const std::string& message) {
+  std::vector<std::string> fields = CSVReader(message, '|', true).readCells();
+  if (fields.empty()) {
+    throw Error("Empty game setting message");
+  } else if (fields.front() != "V") {
+    throw Error(Msg() << "Invalid game setting message: " << message);
+  } else if (fields.size() < 2) {
+    throw Error(Msg() << "Incomplete game setting message: " << message);
+  }
+
+  GameSetting setting(getType(fields[1]));
+  switch (setting.getType()) {
+  case None:
+    break;
+  case MinPlayers:
+  case MaxPlayers:
+  case MaxTurns:
+  case SubsPerPlayer:
+    if (fields.size() != 3) {
+      throw Error(Msg() << "Expected 1 value in game setting message: "
+                  << message);
+    }
+    setting.addValue(fields[2]);
+    if (setting.getUnsignedValue(0, ~0U) == ~0U) {
+      throw Error(Msg() << "Game setting requires a positive integer value: "
+                  << message);
+    }
+    return setting;
+  case SubSize:
+  case SubSurfaceTurnCount:
+  case SubMaxShields:
+  case SubMaxReactorDamage:
+  case SubMaxSonarCharge:
+  case SubMaxTorpedoCharge:
+  case SubMaxMineCharge:
+  case SubMaxSprintCharge:
+  case SubTorpedoCount:
+  case SubMineCount:
+    if (fields.size() != 4) {
+      throw Error(Msg() << "Expected 2 values in game setting message: "
+                  << message);
+    }
+    setting.addValue(fields[2]);
+    setting.addValue(fields[3]);
+    if ((setting.getUnsignedValue(0, ~0U) == ~0U) ||
+        (setting.getUnsignedValue(1, ~0U) == ~0U))
+    {
+      throw Error(Msg() << "This game setting requires a submarine ID "
+                  << "and a positive integer value: " << message);
+    }
+    return setting;
+  case MapSize:
+  case Obstacle:
+    if (fields.size() != 4) {
+      throw Error(Msg() << "Expected 2 values in game setting message: "
+                  << message);
+    }
+    setting.addValue(fields[2]);
+    setting.addValue(fields[3]);
+    if (!setting.getUnsignedValue(0) || !setting.getUnsignedValue(1)) {
+      throw Error(Msg() << "This game setting requires 2 non-zero "
+                  << "positive integer values: " << message);
+    }
+    return setting;
+  case SubStartLocation:
+    if (fields.size() != 5) {
+      throw Error(Msg() << "Expected 3 values in game setting message: "
+                  << message);
+    }
+    setting.addValue(fields[2]);
+    setting.addValue(fields[3]);
+    setting.addValue(fields[4]);
+    if ((setting.getUnsignedValue(0, ~0U) == ~0U) ||
+        !setting.getUnsignedValue(1) ||
+        !setting.getUnsignedValue(2))
+    {
+      throw Error(Msg() << "This game setting requires a submarine ID "
+                  << "and coordinate values (ID|X|Y): " << message);
+    }
+    return setting;
+  }
+
+  throw Error(Msg() << "Unknown game setting message: " << message);
 }
 
 //-----------------------------------------------------------------------------

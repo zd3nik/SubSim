@@ -5,6 +5,7 @@
 #include "utils/CSVWriter.h"
 #include "utils/Error.h"
 #include "utils/Msg.h"
+#include "utils/Screen.h"
 
 namespace subsim
 {
@@ -212,6 +213,24 @@ GameConfig::loadFrom(const DBRecord& record) {
 
 //-----------------------------------------------------------------------------
 void
+GameConfig::print(const std::string& title, Coordinate& coord) const {
+  Screen::print() << coord         << "Title       : " << title;
+  Screen::print() << coord.south() << "Min Players : " << minPlayers;
+  Screen::print() << coord.south() << "Max Players : " << maxPlayers;
+  Screen::print() << coord.south() << "Max Turns   : "
+                  << (maxTurns ? toStr(maxTurns) : "UNLIMITED");
+  Screen::print() << coord.south() << "Map Size    : "
+                  << mapWidth << " x " << mapHeight;
+  Screen::print() << coord.south() << "Subs/Player : " << subsPerPlayer;
+  Screen::print() << coord.south() << "Obstacles   : " << obstacles.size();
+
+  // TODO print customized settings - minus those shown above
+
+  Screen::print() << coord.south().setX(1);
+}
+
+//-----------------------------------------------------------------------------
+void
 GameConfig::saveTo(DBRecord& record) const {
   throw Error("TODO GameConfig::saveTo");
 }
@@ -226,7 +245,7 @@ GameConfig::validate() const {
     throw Error(Msg() << "Invalid min/max player count: " << minPlayers
                 << '/' << maxPlayers);
   }
-  if (maxTurns < MIN_TURN_COUNT) {
+  if (maxTurns && (maxTurns < MIN_TURN_COUNT)) {
     throw Error(Msg() << "Invalid max turn count: " << maxTurns);
   }
   if ((mapWidth < MIN_MAP_WIDTH) || (mapWidth > MAX_MAP_WIDTH) ||

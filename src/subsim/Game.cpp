@@ -14,6 +14,94 @@ namespace subsim
 
 //-----------------------------------------------------------------------------
 void
+Game::deployMine(const int handle) {
+  throw Error("TODO Game::deployMine()");
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::fireTorpedo(const int handle) {
+  throw Error("TODO Game::fireTorpedo()");
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::moveSubmarine(const int handle) {
+  throw Error("TODO Game::moveSubmarine()");
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::sleep(const int handle) {
+  throw Error("TODO Game::seep()");
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::sonarPing(const int handle) {
+  throw Error("TODO Game::sonarPing()");
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::sprint(const int handle) {
+  throw Error("TODO Game::sprint()");
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::surface(const int handle) {
+  throw Error("TODO Game::surface");
+}
+
+//-----------------------------------------------------------------------------
+PlayerPtr
+Game::getPlayer(const int handle) const {
+  if (handle > 0) {
+    for (PlayerPtr player : players) {
+      if (player->handle() == handle) {
+        return player;
+      }
+    }
+  }
+  return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+PlayerPtr
+Game::getPlayer(const std::string name) const {
+  if (!isEmpty(name)) {
+    for (PlayerPtr player : players) {
+      if (iEqual(player->getName(), name)) {
+        return player;
+      }
+    }
+  }
+  return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+std::vector<PlayerPtr>
+Game::getPlayers() const {
+  return std::vector<PlayerPtr>(players.begin(), players.end());
+}
+
+//-----------------------------------------------------------------------------
+std::vector<PlayerPtr>
+Game::playersFromAddress(const std::string address) const {
+  std::vector<PlayerPtr> result;
+  if (!isEmpty(address)) {
+    for (PlayerPtr player : players) {
+      if (player->getAddress() == address) {
+        result.push_back(player);
+      }
+    }
+  }
+  return std::move(result);
+}
+
+//-----------------------------------------------------------------------------
+void
 Game::abort() noexcept {
   if (!aborted) {
     aborted = Timer::now();
@@ -30,10 +118,50 @@ Game::finish() noexcept {
 
 //-----------------------------------------------------------------------------
 void
-Game::saveResults(Database& db) const {
-  if (!isValid()) {
-    throw Error("Cannot save invalid game");
+Game::start() {
+  throw Error("TODO Game::start()");
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::addPlayer(PlayerPtr player) {
+  if (!player) {
+    throw Error("Game::addPlayer() null player");
+  } else if (started) {
+    throw Error("Game::addPlayer() game has already started");
+  } else if (isEmpty(player->getName())) {
+    throw Error("game::addPlayer() empty player name");
+  } else if (player->handle() <= 0) {
+    throw Error(Msg() << "Game::addPlayer() invalid player handle: "
+                << player->handle());
+  } else if (getPlayer(player->getName())) {
+    throw Error(Msg() << "Game::addPlayer() duplicate player name: "
+                << player->getName());
   }
+
+  players.push_back(player);
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::removePlayer(const int handle) {
+  for (auto it = players.begin(); it != players.end(); ++it) {
+    PlayerPtr& player = (*it);
+    if (player->handle() == handle) {
+      players.erase(it);
+      return;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::saveResults(Database& db) const {
+  if (isEmpty(title)) {
+    throw Error(Msg() << "Can't same results of a game with no title");
+  }
+
+  config.validate();
 
   unsigned hits = 0;
   unsigned highScore = 0;
@@ -97,6 +225,22 @@ Game::saveResults(Database& db) const {
     }
     player->saveTo((*record), (players.size() - 1), first, last);
   }
+}
+
+//-----------------------------------------------------------------------------
+bool
+Game::isValid() const noexcept {
+  if (isEmpty(title)) {
+    return false;
+  }
+
+  try {
+    config.validate();
+  } catch (...) {
+    return false;
+  }
+
+  return true;
 }
 
 } // namespace subsim

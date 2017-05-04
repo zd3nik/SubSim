@@ -76,11 +76,10 @@ public: // submarine command methods
 //-----------------------------------------------------------------------------
 public: // other methods
   PlayerPtr getPlayer(const int playerHandle) const;
-  PlayerPtr getPlayer(const std::string playerName,
-                      const bool exactMatch = true) const;
+  PlayerPtr getPlayer(const std::string playerName) const;
 
   std::vector<PlayerPtr> getPlayers() const;
-  std::vector<PlayerPtr> playersForAddress(const std::string address) const;
+  std::vector<PlayerPtr> playersFromAddress(const std::string address) const;
 
   void abort() noexcept;
   void finish() noexcept;

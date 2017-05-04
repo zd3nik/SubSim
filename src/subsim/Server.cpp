@@ -297,11 +297,18 @@ Server::addPlayerHandle() {
 
 //-----------------------------------------------------------------------------
 void
+Server::beginGame() {
+  stopListening();
+  throw Error("TODO Server::beginGame()");
+}
+
+//-----------------------------------------------------------------------------
+void
 Server::blacklistAddress(Coordinate coord) {
   std::string str = prompt(coord, "Enter IP address to blacklist -> ");
   if (str.size()) {
     blackList.insert(ADDRESS_PREFIX + str);
-    for (auto& player : game.playersForAddress(str)) {
+    for (auto& player : game.playersFromAddress(str)) {
       removePlayer((*player), BOOTED);
     }
   }
@@ -317,7 +324,7 @@ Server::blacklistPlayer(Coordinate coord) {
   std::string name;
   name = prompt(coord, "Enter name of player to blacklist -> ");
   if (name.size()) {
-    PlayerPtr player = game.getPlayer(name, false);
+    PlayerPtr player = game.getPlayer(name);
     if (player) {
       blackList.insert(PLAYER_PREFIX + player->getName());
       removePlayer((*player), BOOTED);
@@ -335,7 +342,7 @@ Server::bootPlayer(Coordinate coord) {
   std::string name;
   name = prompt(coord, "Enter name of player to boot -> ");
   if (name.size()) {
-    PlayerPtr player = game.getPlayer(name, false);
+    PlayerPtr player = game.getPlayer(name);
     if (player) {
       removePlayer((*player), BOOTED);
     }
@@ -469,7 +476,7 @@ Server::joinGame(const int handle) {
   } else if (playerName.size() > MAX_PLAYER_NAME_SIZE) {
     removePlayer((*player), NAME_TOO_LONG);
     return;
-  } else if (game.getPlayer(playerName, true)) {
+  } else if (game.getPlayer(playerName)) {
     removePlayer((*player), NAME_IN_USE);
     return;
   }
@@ -483,8 +490,12 @@ Server::joinGame(const int handle) {
   send((*player), joinMsg);
 
   // start the game if max player count reached and autoStart enabled
-  if (autoStart && (game.getPlayerCount() == config.getMaxPlayers())) {
-    beginGame();
+  if (game.getPlayerCount() == config.getMaxPlayers()) {
+    if (autoStart) {
+      beginGame();
+    } else {
+      stopListening();
+    }
   }
 }
 
@@ -492,7 +503,7 @@ Server::joinGame(const int handle) {
 void
 Server::printGameInfo(Coordinate& coord) {
   Screen::print() << coord << ClearToScreenEnd;
-  game.getConfig().print(coord);
+  game.getConfig().print(game.getTitle(), coord);
   Screen::print() << coord.south(1);
 }
 

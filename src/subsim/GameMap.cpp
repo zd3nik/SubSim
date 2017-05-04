@@ -17,13 +17,14 @@ GameMap::reset(const unsigned width, const unsigned height) {
   squares.clear();
   squares.reserve(getSize());
 
-  for (unsigned y = 1; y < height; ++y) {
-    for (unsigned x = 1; x < width; ++x) {
+  for (unsigned y = 1; y <= height; ++y) {
+    for (unsigned x = 1; x <= width; ++x) {
       squares.push_back(std::make_unique<Square>(x, y));
 #ifndef NDEBUG
       const unsigned idx = (squares.size() - 1);
       const Square& square = (*squares[idx]);
-      ASSERT(toIndex(square) == idx);
+      const unsigned i = toIndex(square);
+      ASSERT(i == idx);
       ASSERT(square.getX() == x);
       ASSERT(square.getY() == y);
 #endif

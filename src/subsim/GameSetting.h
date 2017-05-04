@@ -59,20 +59,17 @@ public: // static methods
 
 //-----------------------------------------------------------------------------
 public: // setters
-  GameSetting& clearValues() {
+  void clearValues() {
     values.clear();
-    return (*this);
   }
 
-  GameSetting& addValue(const std::string& value) {
+  void addValue(const std::string& value) {
     values.push_back(value);
-    return (*this);
   }
 
   template<typename T>
-  GameSetting& addValue(const T& value) {
+  void addValue(const T& value) {
     values.push_back(toStr(value));
-    return (*this);
   }
 
 //-----------------------------------------------------------------------------

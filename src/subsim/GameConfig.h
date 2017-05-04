@@ -51,7 +51,7 @@ public: // constructors
 public: // methods
   void addCustomSetting(const GameSetting& setting);
   void loadFrom(const DBRecord&);
-  void print(Coordinate&) const;
+  void print(const std::string& title, Coordinate&) const;
   void saveTo(DBRecord&) const;
   void validate() const;
 
