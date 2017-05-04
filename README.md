@@ -17,7 +17,7 @@ A game ends when only one player has any remaining submarines or the maximum tur
 Game Configuration
 ------------------
 
-Every game is configured with a title, a map of a fixed size, and a list of game settings.  The title, map size, and the number of customized game settings are sent to each player as a single message when they connect to the game server.  If the number of customized game settings is greater that zero then that number of game setting messages will be sent immediately after the first message.
+Every game is configured with a title, a map of a fixed size, and a list of game settings.  The title, map size, and the number of customized game settings are sent to each player as a single message when they connect to the game server.  If the number of customized game settings is greater than zero then that number of game setting messages will be sent immediately after the first message.
 
 When a game is created the game server first waits for players to join.  Each player that joins is provided the game configuration (as described above) and in return they each provide their player name and submarine starting positions.  **NOTE:** Games may be configured so that submarine starting positions are pre-set, in which case the players do not provide their own starting positions.
 
@@ -28,7 +28,7 @@ See the [Game Settings Reference](settings.md) for a list of available game sett
 Game Map
 --------
 
-The game map is a rectangular grid of squares arranged as `width` columns and `height` rows.  Column and row numbers begin at 1.  In the small map below, square 1|1 is the north-west (top-left) corner and square 5|5 is the south-east (bottom-right) corder.  And starting from square 3|3, one square north is 3|2, one square south is 3|4, one square west is 232, and one square east is 4|3.
+The game map is a rectangular grid of squares arranged as `width` columns and `height` rows.  Column and row numbers begin at 1.  In the small map below, square 1|1 is the north-west (top-left) corner and square 5|5 is the south-east (bottom-right) corder.  And starting from square 3|3, one square north is 3|2, one square south is 3|4, one square west is 2|2, and one square east is 4|3.
 
       1 2 3 4 5
     1 . . . . .
@@ -169,7 +169,7 @@ NOTE: Damage inflicted on enemy submarines via nuclear detonation is *not* added
 
 Nuclear detonations have a blast radius of 2.  Any objects within a blast radius of 1 from a nuclear detonation suffer the same damage as a direct hit from a torpedo or mine.  Any objects within a blast radius of 2 from a nuclear detonation suffer the same damage as an indirect hit from a torpedo or mine.  
 
-The default amount damage a nuclear reactor can take is 9 points.  This can be customized in the game configuration.
+The default amount of damage a nuclear reactor can take is 9 points.  This can be customized in the game configuration.
 
 Execution Sequence
 ------------------
@@ -243,23 +243,17 @@ These results are sent only to the player the information is intended for.
     -----------------------------------------------------------------------------------------------
     Player Score         |  Includes your current score (the total number of damage points you have
                          |  inflicted on enemy submarines throughout the game so far).
-    -----------------------------------------------------------------------------------------------
-    Error Message        |  You will receive one error message for each illegal or invalid
-                         |  command you submitted this turn.
-                         |
-                         |  NOTE: If you generate two or more error messages throughout the game
-                         |        you will be removed from the game and given a score of 0.
 
 Ineffective, Illegal, and Invalid Commands
 ------------------------------------------
 
-An ineffective command is a legal command that doesn't do anything effective.  All the consequences of issuing an ineffective command take effect.  For example, if you submit a command to fire a torpedo that is not charged or insufficiently charged to reach its destination the torpedo is still fired but it will not detonate, so you just wasted a torpedo (in some game configurations you may have a limited number of torpedos).  The same thing applies to mines; if they are not fully charged you can still deploy them, but they are inert and you've wasted a mine.  You do not receive an error message for ineffective commands, but you will not be able to score points by submitting ineffective commands.
+An ineffective command is a legal command that doesn't do anything effective.  All the consequences of issuing an ineffective command take effect.  For example, if you submit a command to fire a torpedo that is not charged or insufficiently charged to reach its destination the torpedo is still fired but it will not detonate, so you just wasted a torpedo (in some game configurations you may have a limited number of torpedos).  The same thing applies to mines; if they are not fully charged you can still deploy them, but they are inert and you've wasted a mine.  You will not be disqualified for ineffective commands, but you will not be able to score points by submitting ineffective commands.
 
-An illegal command is one that is recognized and correctly formed but cannot be executed.  Such as attempting to move beyond the edge of the game map, attempting to charge an unknown or un-chargeable equipment item, or moving in an unknown direction.  You will receive one error message for every illegal command you submit.
+An illegal command is one that is recognized and correctly formed but cannot be executed.  Such as attempting to move to an illegal square (a square beyond the edge of the game map or a square that contains a permanent obstacle), attempting to fire a torpedo or deploy a mine to an illegal square, attempting to charge an unknown or un-chargeable equipment item, moving in an unknown direction, etc.  You will be removed from the game and given a score of 0 if you issue any illegal commands.
 
-Invalid commands are commands that are unrecognized or malformed.  You will receive one error message for every invalid command you submit.
+Invalid commands are commands that are unrecognized or malformed.  You will be removed from the game and given a score of 0 if you issue any illegal commands.
 
-NOTE: If you generate two or more error messages throughout the course of the game you will be removed from the game and given a score of 0.
+To summarise: You will be disqualified for issuing any illegal or invalid commands.  You will *not* be disqualified for issuing ineffective commands.
 
 Communication Protocol
 ----------------------

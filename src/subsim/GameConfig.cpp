@@ -114,6 +114,11 @@ GameConfig::addCustomSetting(const GameSetting& setting) {
     customSettings.push_back(setting);
     return;
 
+  case GameSetting::TurnTimeout:
+    setValue(turnTimeout, setting, MIN_TURN_TIMEOUT);
+    customSettings.push_back(setting);
+    return;
+
   case GameSetting::MapSize:
     setValues(mapWidth, mapHeight, setting,
               MIN_MAP_WIDTH, MIN_MAP_HEIGHT,
@@ -219,6 +224,7 @@ GameConfig::print(const std::string& title, Coordinate& coord) const {
   Screen::print() << coord.south() << "Max Players : " << maxPlayers;
   Screen::print() << coord.south() << "Max Turns   : "
                   << (maxTurns ? toStr(maxTurns) : "UNLIMITED");
+  Screen::print() << coord.south() << "Turn Timeout: " << turnTimeout << " ms";
   Screen::print() << coord.south() << "Map Size    : "
                   << mapWidth << " x " << mapHeight;
   Screen::print() << coord.south() << "Subs/Player : " << subsPerPlayer;
@@ -247,6 +253,9 @@ GameConfig::validate() const {
   }
   if (maxTurns && (maxTurns < MIN_TURN_COUNT)) {
     throw Error(Msg() << "Invalid max turn count: " << maxTurns);
+  }
+  if (turnTimeout && (turnTimeout < MIN_TURN_TIMEOUT)) {
+    throw Error(Msg() << "Invalid turn timeout: " << turnTimeout);
   }
   if ((mapWidth < MIN_MAP_WIDTH) || (mapWidth > MAX_MAP_WIDTH) ||
       (mapHeight < MIN_MAP_HEIGHT) || (mapHeight > MAX_MAP_HEIGHT))
@@ -286,6 +295,7 @@ GameConfig::validate() const {
     case GameSetting::MinPlayers:
     case GameSetting::MaxPlayers:
     case GameSetting::MaxTurns:
+    case GameSetting::TurnTimeout:
     case GameSetting::MapSize:
     case GameSetting::SubsPerPlayer:
       if (count.count(setting.getType())) {

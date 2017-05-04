@@ -21,6 +21,7 @@ public: // constants
   static const unsigned MIN_TURN_COUNT      = 100;
   static const unsigned MIN_SUB_SIZE        = 50;
   static const unsigned MAX_SUB_SIZE        = 200;
+  static const unsigned MIN_TURN_TIMEOUT    = 500;
   static const unsigned MIN_MAP_WIDTH       = 10;
   static const unsigned MIN_MAP_HEIGHT      = 10;
   static const unsigned MAX_MAP_WIDTH       = 200;
@@ -32,6 +33,7 @@ private: // variables
   unsigned minPlayers = 2;
   unsigned maxPlayers = 2;
   unsigned maxTurns = 0;
+  unsigned turnTimeout = 0;
   unsigned mapWidth = 20;
   unsigned mapHeight = 20;
   unsigned subsPerPlayer = 1;

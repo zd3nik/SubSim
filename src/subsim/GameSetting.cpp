@@ -19,6 +19,7 @@ GameSetting::typeName(const SettingType type) {
     case MinPlayers:          return "MinPlayers";
     case MaxPlayers:          return "MaxPlayers";
     case MaxTurns:            return "MaxTurns";
+    case TurnTimeout:         return "TurnTimeout";
     case MapSize:             return "MapSize";
     case Obstacle:            return "Obstacle";
     case SubsPerPlayer:       return "SubsPerPlayer";
@@ -44,6 +45,7 @@ GameSetting::getType(const std::string& name) {
   static const std::string eMinPlayers          = typeName(MinPlayers);
   static const std::string eMaxPlayers          = typeName(MaxPlayers);
   static const std::string eMaxTurns            = typeName(MaxTurns);
+  static const std::string eTurnTimeout         = typeName(TurnTimeout);
   static const std::string eMapSize             = typeName(MapSize);
   static const std::string eObstacle            = typeName(Obstacle);
   static const std::string eSubsPerPlayer       = typeName(SubsPerPlayer);
@@ -65,6 +67,8 @@ GameSetting::getType(const std::string& name) {
     return MaxPlayers;
   } else if (iEqual(eMaxTurns, name)) {
     return MaxTurns;
+  } else if (iEqual(eTurnTimeout, name)) {
+    return TurnTimeout;
   } else if (iEqual(eMapSize, name)) {
     return MapSize;
   } else if (iEqual(eObstacle, name)) {
@@ -117,6 +121,7 @@ GameSetting::fromMessage(const std::string& message) {
   case MinPlayers:
   case MaxPlayers:
   case MaxTurns:
+  case TurnTimeout:
   case SubsPerPlayer:
     if (fields.size() != 3) {
       throw Error(Msg() << "Expected 1 value in game setting message: "

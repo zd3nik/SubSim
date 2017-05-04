@@ -18,6 +18,7 @@ public: // enums
     MinPlayers,
     MaxPlayers,
     MaxTurns,
+    TurnTimeout,
     MapSize,
     Obstacle,
     SubsPerPlayer,

@@ -9,7 +9,7 @@ All messages are a pipe delimited list of fields of this form:
 
 The number of `VALUE` fields in a message is determined by the `TYPE`.
 
-The `TYPE` field is always a single ASCII character.  This is so you can easily check the message type by examining the first two characters of the message, which will always be the type character followed by a pipe `|` character. **Only checking the first character to determine the message type could lead to errors.**  For example, if you receive `Protocol Error` the message type is *not* `P`, it is an errant/invalid message and should be treated as an error message.
+The `TYPE` field is always a single ASCII character.  This is so you can easily check the message type by examining the first two characters of the message, which will always be the type character followed by a pipe `|` character. **Only checking the first character to determine the message type could lead to errors.**  For example, if you receive `Protocol Error` the message type is *not* `P`, it is an error message or an errant/invalid message and should be treated as an error message.
 
 Any message that does not follow the prescribed format should be treated as an `ERROR MESSAGE`.
 
@@ -30,7 +30,7 @@ So an `M` message that moves submarine 0 north and charges sonar in the 5th turn
 
 No form of character escaping is supported in the messaging protocol.  So message `fields` may not contain pipe `|` or new-line `\n` characters.
 
-The maximum length (including the new-line) of a single message is 4095 bytes.  Messages that exceed this length will cause errors (sorry hackers, it will not cause a buffer overflow).
+The maximum length (including the new-line) of a single message is 4095 bytes.  Messages that exceed this length are invalid (sorry hackers, it will not cause a buffer overflow).
 
 -------------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ More info:
                       |    name  = The player name you would like to use.  If the name is invalid
                       |            or in use you will receive an error message and be disconnected.
                       |    X     = The column number to place a submarine at.
-                      |            Column numbers start a 0.
+                      |            Column numbers start at 1.
                       |    Y     = The row number to place a submarine at.
                       |            Row numbers start at 1.
                       |  
@@ -131,7 +131,7 @@ More info:
                       |    id    = The ID of the submarine that will fire the torpedo.
                       |            Your first submarine is ID 0, the second is ID 1, etc.
                       |    X     = The column number of the torpedo destination.
-                      |            Column numbers start a 0.
+                      |            Column numbers start at 1.
                       |    Y     = The row number of the torpedo destination.
                       |            Row numbers start at 1.
     ------------------|---------------------------------------------------------------------------
@@ -147,8 +147,8 @@ More info:
                       |    dir   = The direction of the adjacent square to deploy to.
                       |            N = north, E = east, S = south, W = west
                       |
-                      |  NOTE: If you deploy a mine to a square that is occupied by one or more
-                      |        objects the mine will detonate (in the destination square).
+                      |  NOTE: If you deploy a charged mine to a square that is occupied by one or
+                      |        more objects the mine will detonate (in the destination square).
     ------------------|---------------------------------------------------------------------------
     R|tn|id|dir|dist  |  Move the specified submarine 2 or more squares in the specified direction
                       |  using its sprint engine.
@@ -176,7 +176,7 @@ More info:
     Description          |  Message format
     =====================|=====================================================
     Game Configuration   |  C|version|title|width|height|setting_count
-    Game Setting         |  V|setting_name|setting_value
+    Game Setting         |  V|name|value|...
     Begin Turn           |  B|tn
     Sonar Activations    |  S|tn|count
     Sprint Activations   |  R|tn|count
@@ -215,6 +215,11 @@ More info:
                       |
                       |    name    = The setting name.
                       |    value   = The setting value.
+                      |
+                      |  NOTE: Some settings have multiple value fields.  For example the
+                      |        MapSize setting has a width and a height value:
+                      |
+                      |            V|MapSize|60|40
                       |
                       |  See "settings.md" for a list of available game setting names and their
                       |  legal values.
@@ -290,6 +295,11 @@ More info:
                       |    Y       = The row of the torpedo detonation.
                       |              Row numbers start at 1.
                       |    damage  = The total number of damage points inflicted by the torpedo.
+                      |
+                      |  NOTE: If the damage value is 2 that could mean the torpedo got a
+                      |        direct hit on 1 enemy or it could mean the torpedo got an indirect
+                      |        hit on 2 enemies.  3 could be a direct hit and an indirect hit or
+                      |        3 indirect hits.  Etc..
     ------------------|---------------------------------------------------------------------------
     M|tn|X|Y|damage   |  One of these messages will be sent, at the end of a turn, for each
                       |  mine detonation that inflicted damage on one or more enemies during
@@ -304,6 +314,11 @@ More info:
                       |    Y       = The row of the mine that detonated.
                       |              Row numbers start at 1.
                       |    damage  = The total number of damage points inflicted by the mine.
+                      |
+                      |  NOTE: If the damage value is 2 that could mean the mine got a
+                      |        direct hit on 1 enemy or it could mean the mine got an indirect
+                      |        hit on 2 enemies.  3 could be a direct hit and an indirect hit or
+                      |        3 indirect hits.  Etc..
     ------------------|---------------------------------------------------------------------------
     I|tn|id|X|Y|      |  One of these messages will be sent, at the end of a turn, for each
       shields|        |  submarine owned by the player the message is sent to.
@@ -323,6 +338,8 @@ More info:
                       |              1 = surfaced, 0 = not surfaced
                       |    dead    = Has this submarine been destroyed?
                       |              1 = destroyed, 0 = not destroyed
+                      |
+                      |  NOTE: Do not submit commands for surfaced or dead submarines
     ------------------|---------------------------------------------------------------------------
     H|tn|score        |  Sent to each player at the end of each turn to provide the player with
                       |  their current score.
@@ -382,21 +399,19 @@ When a player (client) connects during this time the game server immediately sen
 
 Since the settings count field is set to 2, the server will send 2 game setting messages immediately after the game configuration message.
 
-In this example the customized game settings are Turn Timeout and the Submarine Count each player will start with:
-
     Message               |  Details
     ======================|=====================================
-    V|Turn Timeout|60000  |  Setting Name  = Turn Timeout
+    V|TurnTimeout|60000   |  Setting Name  = TurnTimeout
                           |  Setting Value = 60000 milliseconds
     ----------------------|-------------------------------------
-    V|Submarine Count|3   |  Setting Name  = Submarine Count
+    V|SubsPerPlayer|3     |  Setting Name  = SubsPerPlayer
                           |  Setting Value = 3
 
 To reiterate: the 3 messages shown above would be sent to each player that connected to the game server.  This is what each player would receive from the server immediately after connecting (note the inclusion of a new-line `\n` character at the end of each message):
 
     C|1.0.x|Example Game|50|30|2\n
-    V|Turn Timeout|60000\n
-    V|Submarine Count|3\n
+    V|TurnTimeout|60000\n
+    V|SubsPerPlayer|3\n
 
 Then each player would attempt to join the game by sending their player name and submarine coordinates to the server.  Here is an example of the `J` (join game) message one of those players might send:
 
@@ -406,6 +421,8 @@ Then each player would attempt to join the game by sending their player name and
                                      |  Sub 0 coordinates = 13|3
                                      |  Sub 1 coordinates = 39|10
                                      |  Sub 2 coordinates = 27|15
+
+NOTE: Coordinates for 3 submarines must be sent in the `J` (join game) message because `SubsPerPlayer` is set to 3.
 
 ### Turn Sequence
 
@@ -425,11 +442,11 @@ During a turn each player must send exactly one command message for each of thei
     ---------------|----------------------------------------------------------
     F|1|2|31|15    |  Fire torpedo at square 31|15 from submarine 2 in turn 1.
 
-This is what the messages would look like (note the inclusion of a new-line `\n` character at the end of each message):
+This is what the messages from player 1 would look like (note the inclusion of a new-line `\n` character at the end of each message):
 
-    M|0|E|Sonar\n
-    P|1\n
-    F|2|31|15\n
+    M|1|0|E|Sonar\n
+    P|1|1\n
+    F|1|2|31|15\n
  
 That player would then wait for turn result messages.  Here are some examples:
 
@@ -499,6 +516,8 @@ NOTE: The turn number must be the same in all message sent during a single turn.
 
 After all turn results messages have been sent out the server will either start a new turn (send out a new `B` message) or send out an `F` (game finished) message.
 
+NOTE: Turn result messages are not quaranteed to arrive in any particular order.  So do not assume that the arrival of the `H` message means there will be no more turn info message.  Only the arrival of a `B` (begin turn) or `F` (game finished) message indicates that all turn result messages have been sent.
+
 ### Game Finished
 
 When the server sends an `F` (game finished) message it will also send out one `P` (player result) message for each player that joined the game.  These messages are sent to all players.
@@ -517,7 +536,7 @@ The `F` message will be followed by a number of `P` (player result) messages equ
     -----------------------|-----------------------------------
     P|alice|14             |  Player `alice` scored 14 points.
 
-NOTE: Player results are only provided for players that finish the game.  Players that disconnect or a disqualified are removed from the game entirely.
+NOTE: Player results are only provided for players that finish the game.  Players that disconnected or got disqualified are removed from the game.
 
 These final messages look like this (note the new-line `\n` character at the end of each message):
 
