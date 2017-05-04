@@ -229,17 +229,16 @@ Game::saveResults(Database& db) const {
 
 //-----------------------------------------------------------------------------
 bool
-Game::isValid() const noexcept {
+Game::canStart() const noexcept {
   if (isEmpty(title)) {
     return false;
   }
-
-  try {
-    config.validate();
-  } catch (...) {
+  if (players.size() < config.getMinPlayers()) {
     return false;
   }
-
+  if (config.getMaxPlayers() && (players.size() > config.getMaxPlayers())) {
+    return false;
+  }
   return true;
 }
 

@@ -75,6 +75,8 @@ public: // submarine command methods
 
 //-----------------------------------------------------------------------------
 public: // other methods
+  bool canStart() const noexcept;
+
   PlayerPtr getPlayer(const int playerHandle) const;
   PlayerPtr getPlayer(const std::string playerName) const;
 
@@ -88,10 +90,6 @@ public: // other methods
   void addPlayer(PlayerPtr);
   void removePlayer(const int playerHandle);
   void saveResults(Database&) const;
-
-//-----------------------------------------------------------------------------
-public: // operator overloads
-  bool isValid() const noexcept;
 };
 
 } // namespace subsim

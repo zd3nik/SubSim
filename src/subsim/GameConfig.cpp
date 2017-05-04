@@ -105,7 +105,7 @@ GameConfig::addCustomSetting(const GameSetting& setting) {
     return;
 
   case GameSetting::MaxPlayers:
-    setValue(maxPlayers, setting, 2);
+    setValue(maxPlayers, setting, minPlayers);
     customSettings.push_back(setting);
     return;
 
@@ -224,7 +224,12 @@ GameConfig::print(const std::string& title, Coordinate& coord) const {
   Screen::print() << coord.south() << "Max Players : " << maxPlayers;
   Screen::print() << coord.south() << "Max Turns   : "
                   << (maxTurns ? toStr(maxTurns) : "UNLIMITED");
-  Screen::print() << coord.south() << "Turn Timeout: " << turnTimeout << " ms";
+  if (turnTimeout) {
+    Screen::print() << coord.south() << "Turn Timeout: "
+                    << turnTimeout << " ms";
+  } else {
+    Screen::print() << coord.south() << "Turn Timeout: NONE";
+  }
   Screen::print() << coord.south() << "Map Size    : "
                   << mapWidth << " x " << mapHeight;
   Screen::print() << coord.south() << "Subs/Player : " << subsPerPlayer;
@@ -247,7 +252,7 @@ GameConfig::validate() const {
   if (minPlayers < 2) {
     throw Error(Msg() << "Invalid min player count: " << minPlayers);
   }
-  if (maxPlayers < minPlayers) {
+  if (maxPlayers && (maxPlayers < minPlayers)) {
     throw Error(Msg() << "Invalid min/max player count: " << minPlayers
                 << '/' << maxPlayers);
   }

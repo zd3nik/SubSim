@@ -31,7 +31,7 @@ public: // constants
 //-----------------------------------------------------------------------------
 private: // variables
   unsigned minPlayers = 2;
-  unsigned maxPlayers = 2;
+  unsigned maxPlayers = 0;
   unsigned maxTurns = 0;
   unsigned turnTimeout = 0;
   unsigned mapWidth = 20;

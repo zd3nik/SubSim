@@ -22,7 +22,6 @@ const std::string ADDRESS_PREFIX("Adress: ");
 const std::string BOOTED("booted");
 const std::string COMM_ERROR("comm error");
 const std::string GAME_FULL("game full");
-const std::string GAME_ABORTED("game aborted");
 const std::string INVALID_NAME("invalid name");
 const std::string NAME_IN_USE("name in use");
 const std::string NAME_TOO_LONG("name too long");
@@ -100,7 +99,7 @@ Server::run() {
     UNUSED(cmode);
 
     game.reset(newGameConfig(), title);
-    startListening(game.getConfig().getMaxPlayers());
+    startListening(game.getConfig().getMaxPlayers() + 10);
 
     Coordinate coord;
     while (ok && !game.isFinished()) {
@@ -114,12 +113,10 @@ Server::run() {
 
     printGameInfo(coord.set(1, 1));
     printPlayers(coord);
-    if (!ok) {
-      sendToAll(GAME_ABORTED);
-      if (game.isStarted()) {
-        ok = true;
-      }
-    } else if (game.isFinished() && !game.isAborted()) {
+    if (game.isAborted()) {
+      sendGameResults();
+      ok = true; // allow restart
+    } else if (game.isFinished()) {
       sendGameResults();
       saveResult();
     }
@@ -455,6 +452,7 @@ Server::joinGame(const int handle) {
     return;
   }
 
+  const unsigned maxPlayers = game.getConfig().getMaxPlayers();
   PlayerPtr player = it->second;
   if (!player) {
     throw Error("Server.joinGame() null player");
@@ -463,14 +461,12 @@ Server::joinGame(const int handle) {
                 << ") in join command!");
   } else if (game.isStarted()) {
     throw Error("Server.joinGame() game already started");
-  } else if (game.getPlayerCount() >= game.getConfig().getMaxPlayers()) {
+  } else if (maxPlayers && (game.getPlayerCount() >= maxPlayers)) {
     removePlayer((*player), GAME_FULL);
     return;
   }
 
-  const GameConfig& config = game.getConfig();
   const std::string playerName = input.getStr(1);
-
   if (playerName.empty()) {
     removePlayer((*player), PROTOCOL_ERROR);
     return;
@@ -497,7 +493,7 @@ Server::joinGame(const int handle) {
   send((*player), joinMsg);
 
   // start the game if max player count reached and autoStart enabled
-  if (game.getPlayerCount() == config.getMaxPlayers()) {
+  if (maxPlayers && (game.getPlayerCount() == maxPlayers)) {
     if (autoStart) {
       beginGame();
     } else {
@@ -528,7 +524,7 @@ Server::printOptions(Coordinate& coord) {
     Screen::print() << coord.south() << "(B)oot Player, Blacklist (P)layer";
   }
 
-  if (game.isValid() && !game.isStarted()) {
+  if (game.canStart() && !game.isStarted()) {
     Screen::print() << coord.south() << "(S)tart Game";
   }
 
@@ -562,7 +558,9 @@ Server::quitGame(Coordinate coord) {
   }
   std::string s = prompt(coord, (msg + " [y/N] -> "));
   if (iStartsWith(s, 'Y')) {
-    game.abort();
+    if (game.isStarted()) {
+      game.abort();
+    }
     return true;
   }
   return false;
@@ -643,7 +641,7 @@ Server::sendGameResults() {
   CSVWriter finishMessage = Msg('F')
       << game.getPlayerCount()
       << game.getTurnNumber()
-      << ((game.isFinished() && !game.isAborted()) ? "finished" : "aborted");
+      << (game.isAborted() ? "aborted" : "finished");
 
   // get local list of players (in case any drop out while sending)
   std::vector<PlayerPtr> players = game.getPlayers();
@@ -675,7 +673,7 @@ Server::sendToAll(const std::string& msg) {
 //-----------------------------------------------------------------------------
 void
 Server::startGame(Coordinate coord) {
-  if (game.isValid() && !game.isStarted()) {
+  if (game.canStart() && !game.isStarted()) {
     std::string str = prompt(coord, "Start Game? [y/N] -> ");
     if (iStartsWith(str, 'Y')) {
       beginGame();
