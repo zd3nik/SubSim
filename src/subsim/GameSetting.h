@@ -5,13 +5,14 @@
 #define SUBSIM_GAME_SETTING_H
 
 #include "utils/Platform.h"
+#include "utils/Printable.h"
 #include "utils/StringUtils.h"
 
 namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-class GameSetting {
+class GameSetting : public Printable {
 //-----------------------------------------------------------------------------
 public: // enums
   enum SettingType {
@@ -80,6 +81,10 @@ public: // constructos
       values.push_back(toStr(value));
     }
   }
+
+//-----------------------------------------------------------------------------
+public: // Printable implementation
+  std::string toString() const override;
 
 //-----------------------------------------------------------------------------
 public: // static methods

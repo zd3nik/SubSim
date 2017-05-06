@@ -16,7 +16,7 @@ namespace subsim
 class Coordinate : public Printable {
 //-----------------------------------------------------------------------------
 public: // Printable implementation
-  virtual std::string toString() const {
+  virtual std::string toString() const override {
     return (toStr(x) + '|' + toStr(y));
   }
 

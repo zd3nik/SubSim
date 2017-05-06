@@ -53,7 +53,7 @@ Player::stealConnectionFrom(Player& other) {
 //-----------------------------------------------------------------------------
 void
 Player::addSubmarine(const Submarine& sub) {
-  throw Error("TODO Player::adSubmarine()");
+  subs.push_back(sub);
 }
 
 //-----------------------------------------------------------------------------

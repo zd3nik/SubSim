@@ -42,23 +42,10 @@ GameConfig::GameConfig() {
 //-----------------------------------------------------------------------------
 void
 GameConfig::print(const std::string& title, Coordinate& coord) const {
-  Screen::print() << coord         << "Title       : " << title;
-  Screen::print() << coord.south() << "Min Players : " << minPlayers;
-  Screen::print() << coord.south() << "Max Players : " << maxPlayers;
-  Screen::print() << coord.south() << "Max Turns   : "
-                  << (maxTurns ? toStr(maxTurns) : "UNLIMITED");
-  if (turnTimeout) {
-    Screen::print() << coord.south() << "Turn Timeout: "
-                    << turnTimeout << " ms";
-  } else {
-    Screen::print() << coord.south() << "Turn Timeout: NONE";
+  Screen::print() << coord         << "Title: " << title;
+  for (const GameSetting& setting : customSettings) {
+    Screen::print() << coord.south() << setting;
   }
-  Screen::print() << coord.south() << "Map Size    : "
-                  << mapWidth << " x " << mapHeight;
-  Screen::print() << coord.south() << "Subs/Player : " << subsPerPlayer;
-  Screen::print() << coord.south() << "Obstacles   : " << obstacles.size();
-
-  // TODO print customized settings - minus those shown above
 
   Screen::print() << coord.south().setX(1);
 }

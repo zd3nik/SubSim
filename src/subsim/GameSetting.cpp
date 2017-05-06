@@ -12,6 +12,58 @@ namespace subsim
 
 //-----------------------------------------------------------------------------
 std::string
+GameSetting::toString() const {
+  std::stringstream ss;
+  ss << getName() << ": ";
+  switch (type) {
+  case None:
+    break;
+  case MinPlayers:
+  case SubsPerPlayer:
+    ss << values[0];
+    break;
+  case MaxPlayers:
+  case MaxTurns:
+    if (getUnsignedValue(0)) {
+      ss << values[0];
+    } else {
+      ss << "UNLIMITED";
+    }
+    break;
+  case TurnTimeout:
+    if (getUnsignedValue(0)) {
+      ss << values[0] << " milliseconds";
+    } else {
+      ss << "NO LIMIT";
+    }
+    break;
+  case MapSize:
+    ss << values[0] << 'x' << values[1];
+    break;
+  case Obstacle:
+    ss << values[0] << '|' << values[1];
+    break;
+  case SubStartLocation:
+    ss << "subID " << values[0] << ", coord " << values[1] << '|' << values[2];
+    break;
+  case SubSize:
+  case SubSurfaceTurnCount:
+  case SubMaxShields:
+  case SubMaxReactorDamage:
+  case SubMaxSonarCharge:
+  case SubMaxTorpedoCharge:
+  case SubMaxMineCharge:
+  case SubMaxSprintCharge:
+  case SubTorpedoCount:
+  case SubMineCount:
+    ss << "subID " << values[0] << ", value " << values[1];
+    break;
+  }
+  return ss.str();
+}
+
+//-----------------------------------------------------------------------------
+std::string
 GameSetting::typeName(const SettingType type) {
   switch (type) {
     case None:                return "None";

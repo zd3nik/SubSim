@@ -61,7 +61,7 @@ public: // constructors
 
 //-----------------------------------------------------------------------------
 public: // Object::Printable implementation
-  std::string toString() const {
+  std::string toString() const override {
     return ("Submarine(" + toStr(getObjectID()) + ")");
   }
 

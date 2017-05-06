@@ -296,7 +296,7 @@ Server::addPlayerHandle() {
 void
 Server::beginGame() {
   stopListening();
-  throw Error("TODO Server::beginGame()");
+  game.start();
 }
 
 //-----------------------------------------------------------------------------

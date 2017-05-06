@@ -119,7 +119,13 @@ Game::finish() noexcept {
 //-----------------------------------------------------------------------------
 void
 Game::start() {
-  throw Error("TODO Game::start()");
+  config.validate();
+  if (started) {
+    throw Error("Game is already started");
+  } else if (!canStart()) {
+    throw Error("Game cannot start");
+  }
+  started = Timer::now();
 }
 
 //-----------------------------------------------------------------------------
