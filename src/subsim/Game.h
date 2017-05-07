@@ -54,15 +54,6 @@ public: // inline methods
   unsigned getTurnNumber() const noexcept { return turnNumber; }
 
   void clearPlayers() { players.clear(); }
-  void reset(const GameConfig& gameConfig, const std::string& gameTitle) {
-    title = gameTitle;
-    config = gameConfig;
-    gameMap.reset(config.getMapWidth(), config.getMapHeight());
-    started = 0;
-    aborted = 0;
-    finished = 0;
-    turnNumber = 0;
-  }
 
   Milliseconds elapsedTime() const noexcept {
     return finished ? (finished - started) : aborted ? (aborted - started) : 0;
@@ -82,6 +73,7 @@ public: // methods
 
   std::map<int, std::string> executeTurn();
 
+  void reset(const GameConfig& gameConfig, const std::string& gameTitle);
   void printSummary(Coordinate&) const;
   void abort() noexcept;
   void finish() noexcept;

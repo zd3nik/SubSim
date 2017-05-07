@@ -55,7 +55,9 @@ public: // methods
   }
 
   bool addObject(ObjectPtr object) {
-    if (!contains(object)) {
+    if (isBlocked()) {
+      return false;
+    } else if (!contains(object)) {
       objects.push_back(object);
       return true;
     }

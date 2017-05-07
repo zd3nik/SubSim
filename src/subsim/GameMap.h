@@ -37,6 +37,7 @@ public: // methods
   void removeObject(const Coordinate&, ObjectPtr);
   void moveObject(const Coordinate& from, const Coordinate& to, ObjectPtr);
   void updateDistances(const unsigned maxDistance);
+  bool isBlocked(const Coordinate&) const noexcept;
   Square& getSquare(const Coordinate&) const;
 
 //-----------------------------------------------------------------------------

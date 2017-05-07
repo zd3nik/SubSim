@@ -43,8 +43,13 @@ GameConfig::GameConfig() {
 void
 GameConfig::print(const std::string& title, Coordinate& coord) const {
   Screen::print() << coord         << "Title: " << title;
+  if (obstacles.size()) {
+    Screen::print() << coord.south() << "Obstacle Count: " << obstacles.size();
+  }
   for (const GameSetting& setting : customSettings) {
-    Screen::print() << coord.south() << setting;
+    if (setting.getType() != GameSetting::Obstacle) {
+      Screen::print() << coord.south() << setting;
+    }
   }
 
   Screen::print() << coord.south().setX(1);
@@ -403,6 +408,12 @@ GameConfig::validate() const {
       if ((coord.getX() > mapWidth) || (coord.getY() > mapHeight)) {
         throw Error(Msg() << "Sub config " << i << " has invalid location: "
                     << coord);
+      }
+      for (const Coordinate& obstacle: obstacles) {
+        if (coord == obstacle) {
+          throw Error(Msg() << "Sub config " << i << " coordinate "
+                      << obstacle << " is blocked by an obstacle");
+        }
       }
     }
   }

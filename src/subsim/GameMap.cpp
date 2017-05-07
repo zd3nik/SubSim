@@ -13,20 +13,25 @@ namespace subsim
 //-----------------------------------------------------------------------------
 void
 GameMap::print(Coordinate& coord) const {
-  Screen::print() << coord;
-  for (unsigned i = 0; i < squares.size(); ++i) {
-    const Square& square = getSquare(toCoord(i));
-    const unsigned count = square.getObjectCount();
-    if (count) {
-      Screen::print() << rPad(count, 3, ' ');
-    } else {
-      Screen::print() << "  .";
-    }
-    if (square.getX() == getWidth()) {
-      Screen::print() << coord.south();
+  Screen::print() << coord << "   ";
+  for (unsigned x = 1; x <= getWidth(); ++x) {
+    Screen::print() << rPad(x, 3, ' ');
+  }
+  for (unsigned y = 1; y <= getHeight(); ++y) {
+    Screen::print() << coord.south() << rPad(y, 3, ' ');
+    for (unsigned x = 1; x <= getWidth(); ++x) {
+      const Square& square = getSquare(Coordinate(x, y));
+      const unsigned count = square.getObjectCount();
+      if (square.isBlocked()) {
+        Screen::print() << "  #";
+      } else if (count) {
+        Screen::print() << rPad(count, 3, ' ');
+      } else {
+        Screen::print() << "  .";
+      }
     }
   }
-  Screen::print() << coord.south().setX(1);
+  Screen::print() << coord.south(2);
 }
 
 //-----------------------------------------------------------------------------
@@ -39,13 +44,20 @@ GameMap::printSummary(Coordinate& coord) const {
 
   Screen::print() << coord << "Object Count: " << count;
   if (count) {
-    Screen::print() << coord.south().setX(4);
+    unsigned mobile = 0;
     for (const UniqueSquare& square : squares) {
       for (const ObjectPtr& object : (*square)) {
-        Screen::print() << coord.south() << object->toString();
+        if (object->isMobile()) {
+          if (!mobile++) {
+            Screen::print() << coord.south().setX(4);
+          }
+          Screen::print() << coord.south() << object->toString();
+        }
       }
     }
-    Screen::print() << coord.south(2).setX(1);
+    if (mobile) {
+      Screen::print() << coord.south(2).setX(1);
+    }
   }
 }
 
@@ -77,7 +89,9 @@ GameMap::reset(const unsigned width, const unsigned height) {
 void
 GameMap::addObject(const Coordinate& coord, ObjectPtr object) {
   Square& square = getSquare(coord);
-  if (!square.addObject(object)) {
+  if (square.isBlocked()) {
+    throw Error(Msg() << square << " is blocked, can't add objects to it");
+  } else if (!square.addObject(object)) {
     throw Error(Msg() << square << " already contains " << (*object));
   }
   object->setLocation(coord);
@@ -101,7 +115,9 @@ GameMap::moveObject(const Coordinate& from,
 {
   Square& fromSquare = getSquare(from);
   Square& toSquare = getSquare(to);
-  if (!fromSquare.removeObject(object)) {
+  if (toSquare.isBlocked()) {
+    throw Error(Msg() << toSquare << " is blocked, can't add objects to it");
+  } else if (!fromSquare.removeObject(object)) {
     throw Error(Msg() << fromSquare << " does not contain " << (*object));
   } else if (!toSquare.addObject(object)) {
     throw Error(Msg() << toSquare << " already contains " << (*object));

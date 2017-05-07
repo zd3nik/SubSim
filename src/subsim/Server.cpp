@@ -543,7 +543,10 @@ Server::printPlayers(Coordinate& coord) {
     Screen::print() << coord.south() << player->summary(game.isStarted());
   }
 
-  Screen::print() << coord.south(2).setX(1);
+  Screen::print() << coord.south().setX(1);
+  if (game.getPlayerCount()) {
+    Screen::print() << coord.south();
+  }
 }
 
 //-----------------------------------------------------------------------------

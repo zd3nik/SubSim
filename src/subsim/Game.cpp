@@ -15,6 +15,8 @@
 #include "commands/SleepCommand.h"
 #include "commands/SprintCommand.h"
 #include "commands/SurfaceCommand.h"
+#include "Obstacle.h"
+#include "Submarine.h"
 
 namespace subsim
 {
@@ -169,6 +171,22 @@ Game::printSummary(Coordinate& coord) const {
 
 //-----------------------------------------------------------------------------
 void
+Game::reset(const GameConfig& gameConfig, const std::string& gameTitle) {
+  title = gameTitle;
+  config = gameConfig;
+  gameMap.reset(config.getMapWidth(), config.getMapHeight());
+  started = 0;
+  aborted = 0;
+  finished = 0;
+  turnNumber = 0;
+
+  for (const Coordinate& coord : config.getObstacles()) {
+    gameMap.addObject(coord, std::make_unique<Obstacle>());
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
 Game::abort() noexcept {
   if (!aborted) {
     aborted = Timer::now();
@@ -262,26 +280,36 @@ Game::addPlayer(PlayerPtr player, Input& input) {
       const unsigned x = input.getUInt(i++);
       const unsigned y = input.getUInt(i++);
       if (!gameMap.contains(coord.set(x, y))) {
-        removePlayer(player->handle());
         return Msg() << "Missing or invalid coordinates for sub ID " << subID;
       }
+    }
+    if (gameMap.getSquare(coord).isBlocked()) {
+      return Msg() << "Coordinate " << coord << " is blocked";
     }
 
     SubmarinePtr sub = std::make_shared<Submarine>(player->handle(), subID,
                                                    subConfig);
+    sub->setLocation(coord);
 
     // add submarine to player
     player->addSubmarine(sub);
-
-    // add submarine to map
-    gameMap.addObject(coord, sub);
     subID++;
   }
-
-  players[player->handle()] = player;
   if (i != input.getFieldCount()) {
     return "Incorrect number of submarine coordinate values";
   }
+
+  // add player to player map
+  players[player->handle()] = player;
+
+  // add player submarines to game map
+  for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
+    SubmarinePtr sub = player->getSubmarinePtr(subID);
+    if (sub->getLocation()) {
+      gameMap.addObject(sub->getLocation(), sub);
+    }
+  }
+
   return "";
 }
 
