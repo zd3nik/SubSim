@@ -16,7 +16,7 @@ namespace subsim
 class GameMap : public Rectangle {
 //-----------------------------------------------------------------------------
 private: // variables
-  std::vector<UniqueSqrPtr> squares;
+  std::vector<UniqueSquare> squares;
   unsigned maxDistance;
 
 //-----------------------------------------------------------------------------

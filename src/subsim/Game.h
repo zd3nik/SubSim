@@ -5,8 +5,10 @@
 #define SUBSIM_GAME_H
 
 #include "utils/Platform.h"
+#include "utils/Input.h"
 #include "utils/Timer.h"
 #include "db/Database.h"
+#include "Command.h"
 #include "GameConfig.h"
 #include "GameMap.h"
 #include "Player.h"
@@ -21,7 +23,10 @@ private: // variables
   std::string title;
   GameConfig config;
   GameMap gameMap;
-  std::vector<PlayerPtr> players;
+  std::map<int, PlayerPtr> players;
+  std::list<UniqueCommand> commands;
+  std::vector<std::vector<UniqueCommand>> history;
+  std::map<int, std::string> errs;
   Timestamp started = 0;
   Timestamp aborted = 0;
   Timestamp finished = 0;
@@ -64,18 +69,10 @@ public: // inline methods
   }
 
 //-----------------------------------------------------------------------------
-public: // submarine command methods
-  void deployMine(const int playerHandle);
-  void fireTorpedo(const int playerHandle);
-  void moveSubmarine(const int playerHandle);
-  void sleep(const int playerHandle);
-  void sonarPing(const int playerHandle);
-  void sprint(const int playerHandle);
-  void surface(const int playerHandle);
-
-//-----------------------------------------------------------------------------
-public: // other methods
+public: // methods
   bool canStart() const noexcept;
+  bool allCommandsReceived() const noexcept;
+  bool addCommand(const int playerHandle, Input&, std::string& err);
 
   PlayerPtr getPlayer(const int playerHandle) const;
   PlayerPtr getPlayer(const std::string playerName) const;
@@ -83,13 +80,28 @@ public: // other methods
   std::vector<PlayerPtr> getPlayers() const;
   std::vector<PlayerPtr> playersFromAddress(const std::string address) const;
 
+  std::map<int, std::string> executeTurn();
+
   void abort() noexcept;
   void finish() noexcept;
   void start();
+  void nextTurn();
 
   void addPlayer(PlayerPtr);
   void removePlayer(const int playerHandle);
   void saveResults(Database&) const;
+
+//-----------------------------------------------------------------------------
+private: // methods
+  unsigned getMaxRange() const;
+  void executeSleeps();
+  void executeMoves();
+  void executeSprints();
+  void executeMineDeployments();
+  void executeFireTorpedos();
+  void executeNuclearDetonations();
+  void executeSurfaces();
+  void executePings();
 };
 
 } // namespace subsim

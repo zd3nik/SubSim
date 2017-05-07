@@ -112,7 +112,7 @@ public: // methods
 };
 
 //-----------------------------------------------------------------------------
-typedef std::unique_ptr<Square> UniqueSqrPtr;
+typedef std::unique_ptr<Square> UniqueSquare;
 
 } // namespace subsim
 

@@ -8,50 +8,100 @@
 #include "utils/Screen.h"
 #include "utils/StringUtils.h"
 #include "db/DBRecord.h"
+#include "commands/FireCommand.h"
+#include "commands/MineCommand.h"
+#include "commands/MoveCommand.h"
+#include "commands/PingCommand.h"
+#include "commands/SleepCommand.h"
+#include "commands/SprintCommand.h"
+#include "commands/SurfaceCommand.h"
 
 namespace subsim
 {
 
 //-----------------------------------------------------------------------------
-void
-Game::deployMine(const int handle) {
-  throw Error("TODO Game::deployMine()");
-}
+bool
+Game::addCommand(const int handle, Input& input, std::string& err) {
+  if (handle < 1) {
+    throw Error(Msg() << "Game.addCommand() Invalid player handle: " << handle);
+  } else if (!players.count(handle)) {
+    throw Error(Msg() << "Game.adCommand() Unknown player handle: " << handle);
+  }
 
-//-----------------------------------------------------------------------------
-void
-Game::fireTorpedo(const int handle) {
-  throw Error("TODO Game::fireTorpedo()");
-}
+  std::set<unsigned> subIDs;
+  const unsigned playerID = static_cast<unsigned>(handle);
+  for (const auto& command : commands) {
+    if (command->getPlayerID() == playerID) {
+      subIDs.insert(command->getSubID());
+    }
+  }
 
-//-----------------------------------------------------------------------------
-void
-Game::moveSubmarine(const int handle) {
-  throw Error("TODO Game::moveSubmarine()");
-}
+  if (input.getFieldCount() < 3) {
+    err = "Command messages must begin with turn number and sub ID";
+    return false;
+  }
 
-//-----------------------------------------------------------------------------
-void
-Game::sleep(const int handle) {
-  throw Error("TODO Game::seep()");
-}
+  const unsigned tn = input.getUInt(1, ~0U);
+  if (tn != turnNumber) {
+    err = ("Invalid turn number: " + input.getStr(0));
+    return false;
+  }
 
-//-----------------------------------------------------------------------------
-void
-Game::sonarPing(const int handle) {
-  throw Error("TODO Game::sonarPing()");
-}
+  const unsigned subID = input.getUInt(2, ~0U);
+  if (subID >= config.getSubsPerPlayer()) {
+    err = ("Invalid sub ID: " << toStr(subID));
+    return false;
+  } else if (subIDs.count(subID)) {
+    err = ("Multiple commands for sub ID " + toStr(subID));
+    return false;
+  }
 
-//-----------------------------------------------------------------------------
-void
-Game::sprint(const int handle) {
-  throw Error("TODO Game::sprint()");
-}
+  const std::string type = input.getStr();
+  if (type.size() != 1) {
+    err = ("Invalid command type: " + type);
+    return false;
+  }
 
-//-----------------------------------------------------------------------------
-void
-Game::surface(const int handle) {
-  throw Error("TODO Game::surface");
+  try {
+    switch (type[0]) {
+    case MineCommand::TYPE:
+      commands.push_back(
+            std::unique_ptr<Command>(new MineCommand(playerID, input)));
+      break;
+    case FireCommand::TYPE:
+      commands.push_back(
+            std::unique_ptr<Command>(new FireCommand(playerID, input)));
+      break;
+    case MoveCommand::TYPE:
+      commands.push_back(
+            std::unique_ptr<Command>(new MoveCommand(playerID, input)));
+      break;
+    case PingCommand::TYPE:
+      commands.push_back(
+            std::unique_ptr<Command>(new PingCommand(playerID, input)));
+      break;
+    case SprintCommand::TYPE:
+      commands.push_back(
+            std::unique_ptr<Command>(new SprintCommand(playerID, input)));
+      break;
+    case SleepCommand::TYPE:
+      commands.push_back(
+            std::unique_ptr<Command>(new SleepCommand(playerID, input)));
+      break;
+    case SurfaceCommand::TYPE:
+      commands.push_back(
+            std::unique_ptr<Command>(new SurfaceCommand(playerID, input)));
+      break;
+    default:
+      err = ("Invalid command type: " + type);
+      return false;
+    }
+  } catch (const std::exception& e) {
+    err = e.what();
+    return false;
+  }
+
+  return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -124,8 +174,44 @@ Game::start() {
     throw Error("Game is already started");
   } else if (!canStart()) {
     throw Error("Game cannot start");
+  } else if (turnNumber) {
+    throw Error("Game turn number is " << turnNumber << " at game start!");
   }
   started = Timer::now();
+  turnNumber = 1;
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::nextTurn() {
+  if (!started) {
+    throw Error("Game.nextTurn() game has not been started");
+  } else if (!turnNumber) {
+    throw Error("Game.nextTurn() turn number has not been initialized!");
+  } else if (history.size() != (turnNumber - 1)) {
+    throw Error(Msg() << "Game.nextTurn() history size " << history.size()
+                << " != " << (turnNumber - 1));
+  }
+
+//  history.push_back(decltype(commands));
+//  decltype(commands)& commandList = history.back();
+//  for (auto it = commands.begin(); it != commands.end(); ++it) {
+//    commandList.push_back(std::move(*it));
+//  }
+
+  history.push_back(std::move(commands));
+  commands.clear();
+
+  if (turnNumber >= config.getMaxTurns()) {
+    finish();
+  } else if (players.size() < 2) {
+    Logger::error() << "Aborting game because player count dropped to "
+                    << players.size();
+    abort();
+  }
+  else {
+    turnNumber++;
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -151,6 +237,13 @@ Game::addPlayer(PlayerPtr player) {
 //-----------------------------------------------------------------------------
 void
 Game::removePlayer(const int handle) {
+  for (auto it = commands.begin(); it != commands.end(); ++it) {
+    if (it->getPlayerID() == handle) {
+      it = commands.erase(it);
+    } else {
+      it++;
+    }
+  }
   for (auto it = players.begin(); it != players.end(); ++it) {
     PlayerPtr& player = (*it);
     if (player->handle() == handle) {
@@ -246,6 +339,38 @@ Game::canStart() const noexcept {
     return false;
   }
   return true;
+}
+
+//-----------------------------------------------------------------------------
+bool
+Game::allCommandsReceived() const noexcept {
+  return (commands.size() == (players.size() * config.getSubsPerPlayer()));
+}
+
+//-----------------------------------------------------------------------------
+unsigned
+Game::getMaxRange() const {
+  // TODO find max sonar/torpedo range of all active submarines
+  return std::max<unsigned>(config.getMapWidth(), config.getMapHeight());
+}
+
+//-----------------------------------------------------------------------------
+std::map<int, std::string>
+Game::executeTurn() {
+  errs.clear();
+
+  gameMap.updateDistances(getMaxRange());
+
+  executeSleeps();
+  executeMoves();
+  executeSprints();
+  executeMineDeployments();
+  executeFireTorpedos();
+  executeNuclearDetonations();
+  executeSurfaces();
+  executePings();
+
+  return errs;
 }
 
 } // namespace subsim

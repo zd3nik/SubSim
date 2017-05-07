@@ -401,26 +401,19 @@ Server::handlePlayerInput(const int handle) {
     return;
   }
 
+  std::string err;
   std::string str = input.getStr();
-  if (str.size() == 1) {
-    switch (str[0]) {
-    case 'D': game.deployMine(handle);    return;
-    case 'F': game.fireTorpedo(handle);   return;
-    case 'J': joinGame(handle);           return;
-    case 'M': game.moveSubmarine(handle); return;
-    case 'P': game.sonarPing(handle);     return;
-    case 'R': game.sprint(handle);        return;
-    case 'S': game.sleep(handle);         return;
-    case 'U': game.surface(handle);       return;
-    default:
-      break;
+  if (str == "J") {
+    joinGame(handle);
+  } else if (!game.addCommand(handle, input, err)) {
+    removePlayer(handle, err);
+  } else if (game.allCommandsReceived()) {
+    std::map<int, std::string> errs = game.executeTurn();
+    for (auto it = errs.begin(); it != errs.end(); ++it) {
+      removePlayer(it->first, it->second);
     }
+    game.nextTurn();
   }
-
-  Logger::error() << "Invalid message(" << input.getLine()
-                  << ") from player handle " << handle;
-
-  removePlayer(handle, PROTOCOL_ERROR);
 }
 
 //-----------------------------------------------------------------------------
