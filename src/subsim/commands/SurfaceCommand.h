@@ -28,7 +28,7 @@ public: // constructors
   SurfaceCommand& operator=(const SurfaceCommand&) noexcept = default;
 
   SurfaceCommand(const unsigned playerID, const Input& input)
-    : Command(Command::DeploySurface, playerID, input)
+    : Command(Command::Surface, playerID, input)
   {
     if (input.getFieldCount() != 3) {
       throw Error("Surface command requires 2 values");

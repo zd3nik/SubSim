@@ -23,9 +23,11 @@ namespace subsim
 bool
 Game::addCommand(const int handle, Input& input, std::string& err) {
   if (handle < 1) {
-    throw Error(Msg() << "Game.addCommand() Invalid player handle: " << handle);
+    throw Error(Msg() << "Game::addCommand() Invalid player handle: "
+                << handle);
   } else if (!players.count(handle)) {
-    throw Error(Msg() << "Game.adCommand() Unknown player handle: " << handle);
+    throw Error(Msg() << "Game::addCommand() Unknown player handle: "
+                << handle);
   }
 
   std::set<unsigned> subIDs;
@@ -49,7 +51,7 @@ Game::addCommand(const int handle, Input& input, std::string& err) {
 
   const unsigned subID = input.getUInt(2, ~0U);
   if (subID >= config.getSubsPerPlayer()) {
-    err = ("Invalid sub ID: " << toStr(subID));
+    err = ("Invalid sub ID: " + toStr(subID));
     return false;
   } else if (subIDs.count(subID)) {
     err = ("Multiple commands for sub ID " + toStr(subID));
@@ -108,7 +110,8 @@ Game::addCommand(const int handle, Input& input, std::string& err) {
 PlayerPtr
 Game::getPlayer(const int handle) const {
   if (handle > 0) {
-    for (PlayerPtr player : players) {
+    for (auto it = players.begin(); it != players.end(); ++it) {
+      const PlayerPtr& player = it->second;
       if (player->handle() == handle) {
         return player;
       }
@@ -121,7 +124,8 @@ Game::getPlayer(const int handle) const {
 PlayerPtr
 Game::getPlayer(const std::string name) const {
   if (!isEmpty(name)) {
-    for (PlayerPtr player : players) {
+    for (auto it = players.begin(); it != players.end(); ++it) {
+      const PlayerPtr& player = it->second;
       if (iEqual(player->getName(), name)) {
         return player;
       }
@@ -133,7 +137,12 @@ Game::getPlayer(const std::string name) const {
 //-----------------------------------------------------------------------------
 std::vector<PlayerPtr>
 Game::getPlayers() const {
-  return std::vector<PlayerPtr>(players.begin(), players.end());
+  std::vector<PlayerPtr> result;
+  result.reserve(players.size());
+  for (auto it = players.begin(); it != players.end(); ++it) {
+    result.push_back(it->second);
+  }
+  return std::move(result);
 }
 
 //-----------------------------------------------------------------------------
@@ -141,13 +150,21 @@ std::vector<PlayerPtr>
 Game::playersFromAddress(const std::string address) const {
   std::vector<PlayerPtr> result;
   if (!isEmpty(address)) {
-    for (PlayerPtr player : players) {
+    for (auto it = players.begin(); it != players.end(); ++it) {
+      const PlayerPtr& player = it->second;
       if (player->getAddress() == address) {
         result.push_back(player);
       }
     }
   }
   return std::move(result);
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::printSummary(Coordinate& coord) const {
+  config.print(title, coord);
+  gameMap.printSummary(coord.south().setX(1));
 }
 
 //-----------------------------------------------------------------------------
@@ -175,7 +192,8 @@ Game::start() {
   } else if (!canStart()) {
     throw Error("Game cannot start");
   } else if (turnNumber) {
-    throw Error("Game turn number is " << turnNumber << " at game start!");
+    throw Error(Msg() << "Game turn number is " << turnNumber
+                << " at game start!");
   }
   started = Timer::now();
   turnNumber = 1;
@@ -185,21 +203,19 @@ Game::start() {
 void
 Game::nextTurn() {
   if (!started) {
-    throw Error("Game.nextTurn() game has not been started");
+    throw Error("Game::nextTurn() game has not been started");
   } else if (!turnNumber) {
-    throw Error("Game.nextTurn() turn number has not been initialized!");
+    throw Error("Game::nextTurn() turn number has not been initialized!");
   } else if (history.size() != (turnNumber - 1)) {
-    throw Error(Msg() << "Game.nextTurn() history size " << history.size()
+    throw Error(Msg() << "Game::nextTurn() history size " << history.size()
                 << " != " << (turnNumber - 1));
   }
 
-//  history.push_back(decltype(commands));
-//  decltype(commands)& commandList = history.back();
-//  for (auto it = commands.begin(); it != commands.end(); ++it) {
-//    commandList.push_back(std::move(*it));
-//  }
-
-  history.push_back(std::move(commands));
+  history.push_back(decltype(commands)());
+  decltype(commands)& commandList = history.back();
+  for (auto it = commands.begin(); it != commands.end(); ++it) {
+    commandList.push_back(std::move(*it));
+  }
   commands.clear();
 
   if (turnNumber >= config.getMaxTurns()) {
@@ -215,14 +231,14 @@ Game::nextTurn() {
 }
 
 //-----------------------------------------------------------------------------
-void
-Game::addPlayer(PlayerPtr player) {
+std::string
+Game::addPlayer(PlayerPtr player, Input& input) {
   if (!player) {
     throw Error("Game::addPlayer() null player");
   } else if (started) {
     throw Error("Game::addPlayer() game has already started");
   } else if (isEmpty(player->getName())) {
-    throw Error("game::addPlayer() empty player name");
+    throw Error("Game::addPlayer() empty player name");
   } else if (player->handle() <= 0) {
     throw Error(Msg() << "Game::addPlayer() invalid player handle: "
                 << player->handle());
@@ -231,22 +247,64 @@ Game::addPlayer(PlayerPtr player) {
                 << player->getName());
   }
 
-  players.push_back(player);
+  unsigned i = 2; // input field index
+  unsigned subID = 0;
+  for (const Submarine& subConfig : config.getSubmarineConfigs()) {
+    // double check sub ID
+    if (subConfig.getObjectID() != subID) {
+      throw Error(Msg() << "Invalid object ID (" << subConfig.getObjectID()
+                  << " on sub config " << subID);
+    }
+
+    // verify sub has a valid starting location
+    Coordinate coord(subConfig.getLocation());
+    if (!coord) {
+      const unsigned x = input.getUInt(i++);
+      const unsigned y = input.getUInt(i++);
+      if (!gameMap.contains(coord.set(x, y))) {
+        removePlayer(player->handle());
+        return Msg() << "Missing or invalid coordinates for sub ID " << subID;
+      }
+    }
+
+    SubmarinePtr sub = std::make_shared<Submarine>(player->handle(), subID,
+                                                   subConfig);
+
+    // add submarine to player
+    player->addSubmarine(sub);
+
+    // add submarine to map
+    gameMap.addObject(coord, sub);
+    subID++;
+  }
+
+  players[player->handle()] = player;
+  if (i != input.getFieldCount()) {
+    return "Incorrect number of submarine coordinate values";
+  }
+  return "";
 }
 
 //-----------------------------------------------------------------------------
 void
 Game::removePlayer(const int handle) {
   for (auto it = commands.begin(); it != commands.end(); ++it) {
-    if (it->getPlayerID() == handle) {
+    const UniqueCommand& command = (*it);
+    if (command->getPlayerID() == static_cast<unsigned>(handle)) {
       it = commands.erase(it);
     } else {
       it++;
     }
   }
   for (auto it = players.begin(); it != players.end(); ++it) {
-    PlayerPtr& player = (*it);
+    PlayerPtr player = it->second;
     if (player->handle() == handle) {
+      for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
+        SubmarinePtr sub = player->getSubmarinePtr(subID);
+        if (sub->getLocation()) {
+          gameMap.removeObject(sub->getLocation(), sub);
+        }
+      }
       players.erase(it);
       return;
     }
@@ -265,14 +323,16 @@ Game::saveResults(Database& db) const {
   unsigned hits = 0;
   unsigned highScore = 0;
   unsigned lowScore = ~0U;
-  for (auto& player : players) {
+  for (auto it = players.begin(); it != players.end(); ++it) {
+    const PlayerPtr& player = it->second;
     hits += player->getScore();
     highScore = std::max<unsigned>(highScore, player->getScore());
     lowScore = std::min<unsigned>(lowScore, player->getScore());
   }
 
   unsigned ties = 0;
-  for (auto& player : players) {
+  for (auto it = players.begin(); it != players.end(); ++it) {
+    const PlayerPtr& player = it->second;
     ties += (player->getScore() == highScore);
   }
   if (ties > 0) {
@@ -311,7 +371,8 @@ Game::saveResults(Database& db) const {
   stats->setUInt("last.hits", hits);
   stats->setUInt("last.ties", ties);
 
-  for (auto& player : players) {
+  for (auto it = players.begin(); it != players.end(); ++it) {
+    const PlayerPtr& player = it->second;
     const bool first = (player->getScore() == highScore);
     const bool last = (player->getScore() == lowScore);
     player->addStatsTo(*stats, first, last);
@@ -361,14 +422,15 @@ Game::executeTurn() {
 
   gameMap.updateDistances(getMaxRange());
 
-  executeSleeps();
-  executeMoves();
-  executeSprints();
-  executeMineDeployments();
-  executeFireTorpedos();
-  executeNuclearDetonations();
-  executeSurfaces();
-  executePings();
+  // TODO
+//  executeSleeps();
+//  executeMoves();
+//  executeSprints();
+//  executeMineDeployments();
+//  executeFireTorpedos();
+//  executeNuclearDetonations();
+//  executeSurfaces();
+//  executePings();
 
   return errs;
 }

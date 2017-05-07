@@ -28,6 +28,7 @@ const std::string NAME_TOO_LONG("name too long");
 const std::string PLAYER_EXITED("exited");
 const std::string PLAYER_PREFIX("Player: ");
 const std::string PROTOCOL_ERROR("protocol error");
+const std::string INVALID_SUBS("invalid sub data");
 const unsigned MAX_PLAYER_NAME_SIZE = 12;
 
 //-----------------------------------------------------------------------------
@@ -479,7 +480,12 @@ Server::joinGame(const int handle) {
 
   removeStagedPlayer(player->handle());
   player->setName(playerName);
-  game.addPlayer(player);
+
+  const std::string err = game.addPlayer(player, input);
+  if (err.size()) {
+    removePlayer((*player), err);
+    return;
+  }
 
   // send confirmation to joining Player
   CSVWriter joinMsg = Msg('J') << playerName;
@@ -499,8 +505,7 @@ Server::joinGame(const int handle) {
 void
 Server::printGameInfo(Coordinate& coord) {
   Screen::print() << coord << ClearToScreenEnd;
-  game.getConfig().print(game.getTitle(), coord);
-  Screen::print() << coord.south(1);
+  game.printSummary(coord);
 }
 
 //-----------------------------------------------------------------------------

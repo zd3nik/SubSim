@@ -36,7 +36,7 @@ public: // constructors
   MoveCommand& operator=(const MoveCommand&) noexcept = default;
 
   MoveCommand(const unsigned playerID, const Input& input)
-    : Command(Command::MoveTorpedo, playerID, input)
+    : Command(Command::Move, playerID, input)
   {
     if (input.getFieldCount() != 5) {
       throw Error("Move command requires 4 values");

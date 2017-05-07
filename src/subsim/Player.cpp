@@ -52,7 +52,23 @@ Player::stealConnectionFrom(Player& other) {
 
 //-----------------------------------------------------------------------------
 void
-Player::addSubmarine(const Submarine& sub) {
+Player::addSubmarine(SubmarinePtr sub) {
+  if (!sub) {
+    throw Error(Msg() << (*this) << " addSubmarine() null submarine pointer");
+  } else if (sub->getPlayerID() != static_cast<unsigned>(handle())) {
+    throw Error(Msg() << (*this) << " addSubmarine() player ID ("
+                << sub->getPlayerID() << " doesn't match handle " << handle());
+  }
+
+  for (const SubmarinePtr& ptr : subs) {
+    if (ptr.get() == sub.get()) {
+      throw Error(Msg() << (*this) << " addSubmarine() duplicate object");
+    } else if (ptr->getObjectID() == sub->getObjectID()) {
+      throw Error(Msg() << (*this) << " addSubmarine() duplicate sub ID "
+                  << sub->getObjectID());
+    }
+  }
+
   subs.push_back(sub);
 }
 

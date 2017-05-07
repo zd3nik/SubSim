@@ -70,6 +70,13 @@ Submarine::getEquipment(const std::string& name) {
 }
 
 //-----------------------------------------------------------------------------
+std::string
+Submarine::toString() const {
+  return Msg() << "Submarine(playerID " << getPlayerID() << ", subID "
+               <<  getObjectID() << ", coord " << getLocation() << ")";
+}
+
+//-----------------------------------------------------------------------------
 void
 Submarine::surface() noexcept {
   surfaceTurns = surfaceTurnCount;

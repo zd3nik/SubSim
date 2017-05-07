@@ -398,6 +398,13 @@ GameConfig::validate() const {
       throw Error(Msg() << "Sub config " << i << " has object ID "
                   << sub.getObjectID());
     }
+    const Coordinate coord = sub.getLocation();
+    if (coord) {
+      if ((coord.getX() > mapWidth) || (coord.getY() > mapHeight)) {
+        throw Error(Msg() << "Sub config " << i << " has invalid location: "
+                    << coord);
+      }
+    }
   }
   if (obstacles.size() > ((mapWidth * mapHeight) / 4)) {
     throw Error("Obstacle count may not exceed 1/4 of map area");

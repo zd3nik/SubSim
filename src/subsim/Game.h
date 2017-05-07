@@ -25,7 +25,7 @@ private: // variables
   GameMap gameMap;
   std::map<int, PlayerPtr> players;
   std::list<UniqueCommand> commands;
-  std::vector<std::vector<UniqueCommand>> history;
+  std::vector<std::list<UniqueCommand>> history;
   std::map<int, std::string> errs;
   Timestamp started = 0;
   Timestamp aborted = 0;
@@ -82,12 +82,13 @@ public: // methods
 
   std::map<int, std::string> executeTurn();
 
+  void printSummary(Coordinate&) const;
   void abort() noexcept;
   void finish() noexcept;
   void start();
   void nextTurn();
 
-  void addPlayer(PlayerPtr);
+  std::string addPlayer(PlayerPtr, Input&);
   void removePlayer(const int playerHandle);
   void saveResults(Database&) const;
 

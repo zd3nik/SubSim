@@ -28,7 +28,7 @@ public: // constructors
   PingCommand& operator=(const PingCommand&) noexcept = default;
 
   PingCommand(const unsigned playerID, const Input& input)
-    : Command(Command::DeployPing, playerID, input)
+    : Command(Command::Ping, playerID, input)
   {
     if (input.getFieldCount() != 3) {
       throw Error("Ping command requires 2 values");

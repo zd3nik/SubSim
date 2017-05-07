@@ -35,7 +35,7 @@ public: // constructors
   SprintCommand& operator=(const SprintCommand&) noexcept = default;
 
   SprintCommand(const unsigned playerID, const Input& input)
-    : Command(Command::SprintTorpedo, playerID, input)
+    : Command(Command::Sprint, playerID, input)
   {
     if (input.getFieldCount() != 5) {
       throw Error("Sprint command requires 4 values");

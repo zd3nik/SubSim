@@ -5,7 +5,6 @@
 #define SUBSIM_SUBMARINE_H
 
 #include "utils/Platform.h"
-#include "utils/Coordinate.h"
 #include "utils/Movement.h"
 #include "Object.h"
 
@@ -26,7 +25,6 @@ public: // enums
 
 //-----------------------------------------------------------------------------
 private: // variables
-  Coordinate location;
   unsigned surfaceTurnCount = 3;
   unsigned maxShields = 3;
   unsigned maxReactorDamage = 9;
@@ -61,9 +59,7 @@ public: // constructors
 
 //-----------------------------------------------------------------------------
 public: // Object::Printable implementation
-  std::string toString() const override {
-    return ("Submarine(" + toStr(getObjectID()) + ")");
-  }
+  std::string toString() const override;
 
 //-----------------------------------------------------------------------------
 public: // static methods
@@ -72,10 +68,6 @@ public: // static methods
 
 //-----------------------------------------------------------------------------
 public: // setters
-  void setLocation(const Coordinate& coord) noexcept {
-    location = coord;
-  }
-
   void setSize(const unsigned value) noexcept {
     Object::setSize(value);
   }
@@ -118,10 +110,6 @@ public: // setters
 
 //-----------------------------------------------------------------------------
 public: // getters
-  Coordinate getLocation() const noexcept {
-    return location;
-  }
-
   bool isDead() const noexcept {
     return dead;
   }
@@ -181,6 +169,9 @@ public: // methods
   bool takeReactorDamage(const unsigned damage) noexcept;
   bool takeReactorStrain(const unsigned strain) noexcept;
 };
+
+//-----------------------------------------------------------------------------
+typedef std::shared_ptr<Submarine> SubmarinePtr;
 
 } // namespace subsim
 

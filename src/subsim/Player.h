@@ -19,7 +19,7 @@ class Player : public Printable {
 private: // variables
   Socket socket;
   std::string status;
-  std::vector<Submarine> subs;
+  std::vector<SubmarinePtr> subs;
   unsigned score = 0;
   unsigned turns = 0;
 
@@ -50,7 +50,7 @@ public: // methods
 
   std::string summary(const bool gameStarted) const;
   void stealConnectionFrom(Player&);
-  void addSubmarine(const Submarine&);
+  void addSubmarine(SubmarinePtr);
   void addStatsTo(DBRecord&, const bool first, const bool last) const;
   void saveTo(DBRecord&, const unsigned opponents,
               const bool first, const bool last) const;
@@ -111,12 +111,16 @@ public: // getters
     return subs.size();
   }
 
-  const Submarine& getSubmarine(const unsigned subID) const {
+  SubmarinePtr getSubmarinePtr(const unsigned subID) const {
     return subs[subID];
   }
 
+  const Submarine& getSubmarine(const unsigned subID) const {
+    return (*subs[subID]);
+  }
+
   Submarine& getSubmarine(const unsigned subID) {
-    return subs[subID];
+    return (*subs[subID]);
   }
 };
 

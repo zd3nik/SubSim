@@ -5,6 +5,7 @@
 #define SUBSIM_OBJECT_H
 
 #include "utils/Platform.h"
+#include "utils/Coordinate.h"
 #include "utils/Printable.h"
 
 namespace subsim
@@ -18,6 +19,7 @@ private: // variables
   unsigned objectID;
   unsigned size;
   bool mobile;
+  Coordinate location;
 
 //-----------------------------------------------------------------------------
 public: // constructors
@@ -38,6 +40,12 @@ public: // constructors
   { }
 
 //-----------------------------------------------------------------------------
+public: // setters
+  void setLocation(const Coordinate& coord) noexcept {
+    location = coord;
+  }
+
+//-----------------------------------------------------------------------------
 public: // getters
   unsigned getPlayerID() const noexcept {
     return playerID;
@@ -53,6 +61,14 @@ public: // getters
 
   unsigned isMobile() const noexcept {
     return mobile;
+  }
+
+  const Coordinate& getLocation() const noexcept {
+    return location;
+  }
+
+  Coordinate& getLocation() noexcept {
+    return location;
   }
 
 //-----------------------------------------------------------------------------

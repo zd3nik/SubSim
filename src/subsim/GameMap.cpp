@@ -5,9 +5,30 @@
 #include "utils/Error.h"
 #include "utils/Movement.h"
 #include "utils/Msg.h"
+#include "utils/Screen.h"
 
 namespace subsim
 {
+
+//-----------------------------------------------------------------------------
+void
+GameMap::printSummary(Coordinate& coord) const {
+  unsigned count = 0;
+  for (const UniqueSquare& square : squares) {
+    count += square->getObjectCount();
+  }
+
+  Screen::print() << coord << "Object Count: " << count;
+  if (count) {
+    Screen::print() << coord.south().setX(4);
+    for (const UniqueSquare& square : squares) {
+      for (const ObjectPtr& object : (*square)) {
+        Screen::print() << coord.south() << object->toString();
+      }
+    }
+    Screen::print() << coord.south(2).setX(1);
+  }
+}
 
 //-----------------------------------------------------------------------------
 void
@@ -40,6 +61,7 @@ GameMap::addObject(const Coordinate& coord, ObjectPtr object) {
   if (!square.addObject(object)) {
     throw Error(Msg() << square << " already contains " << (*object));
   }
+  object->setLocation(coord);
 }
 
 //-----------------------------------------------------------------------------
@@ -49,6 +71,7 @@ GameMap::removeObject(const Coordinate& coord, ObjectPtr object) {
   if (!square.removeObject(object)) {
     throw Error(Msg() << square << " does not contain " << (*object));
   }
+  object->setLocation(Coordinate());
 }
 
 //-----------------------------------------------------------------------------
@@ -57,8 +80,14 @@ GameMap::moveObject(const Coordinate& from,
                     const Coordinate& to,
                     ObjectPtr object)
 {
-  removeObject(from, object);
-  addObject(to, object);
+  Square& fromSquare = getSquare(from);
+  Square& toSquare = getSquare(to);
+  if (!fromSquare.removeObject(object)) {
+    throw Error(Msg() << fromSquare << " does not contain " << (*object));
+  } else if (!toSquare.addObject(object)) {
+    throw Error(Msg() << toSquare << " already contains " << (*object));
+  }
+  object->setLocation(toSquare);
 }
 
 //-----------------------------------------------------------------------------

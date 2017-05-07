@@ -5,6 +5,7 @@
 #define SUBSIM_GAME_MAP_H
 
 #include "utils/Platform.h"
+#include "utils/Coordinate.h"
 #include "utils/Rectangle.h"
 #include "Object.h"
 #include "Square.h"
@@ -29,6 +30,7 @@ public: // constructors
 
 //-----------------------------------------------------------------------------
 public: // methods
+  void printSummary(Coordinate&) const;
   void reset(const unsigned width, const unsigned height);
   void addObject(const Coordinate&, ObjectPtr);
   void removeObject(const Coordinate&, ObjectPtr);
