@@ -98,6 +98,7 @@ private: // methods
   void startGame(Coordinate);
   void startListening();
   void stopListening();
+  void viewMap();
 };
 
 } // namespace subsim

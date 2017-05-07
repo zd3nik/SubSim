@@ -30,6 +30,7 @@ public: // constructors
 
 //-----------------------------------------------------------------------------
 public: // methods
+  void print(Coordinate&) const;
   void printSummary(Coordinate&) const;
   void reset(const unsigned width, const unsigned height);
   void addObject(const Coordinate&, ObjectPtr);

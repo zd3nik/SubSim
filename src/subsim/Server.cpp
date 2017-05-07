@@ -430,6 +430,7 @@ Server::handleUserInput(Coordinate coord) {
     case 'Q': return !quitGame(coord);
     case 'R': clearScreen();           break;
     case 'S': startGame(coord);        break;
+    case 'V': viewMap();               break;
     default:
       break;
     }
@@ -512,7 +513,7 @@ Server::printGameInfo(Coordinate& coord) {
 void
 Server::printOptions(Coordinate& coord) {
   Screen::print() << coord << ClearToScreenEnd
-                  << "(Q)uit, (R)edraw, Blacklist (A)ddress";
+                  << "(Q)uit, (R)edraw, (V)iew Map, Blacklist (A)ddress";
 
   if (blackList.size()) {
     Screen::print() << ", (C)lear blacklist";
@@ -706,6 +707,15 @@ Server::stopListening() {
     input.removeHandle(socket.getHandle());
     socket.close();
   }
+}
+
+//-----------------------------------------------------------------------------
+void
+Server::viewMap() {
+  Coordinate coord(1, 1);
+  clearScreen();
+  game.getMap().print(coord);
+  prompt(coord, "RET=continue");
 }
 
 } // namespace subsim

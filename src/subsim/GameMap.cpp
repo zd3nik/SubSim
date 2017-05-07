@@ -12,6 +12,25 @@ namespace subsim
 
 //-----------------------------------------------------------------------------
 void
+GameMap::print(Coordinate& coord) const {
+  Screen::print() << coord;
+  for (unsigned i = 0; i < squares.size(); ++i) {
+    const Square& square = getSquare(toCoord(i));
+    const unsigned count = square.getObjectCount();
+    if (count) {
+      Screen::print() << rPad(count, 3, ' ');
+    } else {
+      Screen::print() << "  .";
+    }
+    if (square.getX() == getWidth()) {
+      Screen::print() << coord.south();
+    }
+  }
+  Screen::print() << coord.south().setX(1);
+}
+
+//-----------------------------------------------------------------------------
+void
 GameMap::printSummary(Coordinate& coord) const {
   unsigned count = 0;
   for (const UniqueSquare& square : squares) {
