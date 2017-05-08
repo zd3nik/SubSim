@@ -55,7 +55,7 @@ void
 Player::addSubmarine(SubmarinePtr sub) {
   if (!sub) {
     throw Error(Msg() << (*this) << " addSubmarine() null submarine pointer");
-  } else if (sub->getPlayerID() != static_cast<unsigned>(handle())) {
+  } else if (sub->getPlayerID() != getPlayerID()) {
     throw Error(Msg() << (*this) << " addSubmarine() player ID ("
                 << sub->getPlayerID() << " doesn't match handle " << handle());
   }

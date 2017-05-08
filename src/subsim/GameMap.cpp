@@ -44,18 +44,18 @@ GameMap::printSummary(Coordinate& coord) const {
 
   Screen::print() << coord << "Object Count: " << count;
   if (count) {
-    unsigned mobile = 0;
+    unsigned tmp = 0;
     for (const UniqueSquare& square : squares) {
       for (const ObjectPtr& object : (*square)) {
-        if (object->isMobile()) {
-          if (!mobile++) {
+        if (!object->isPermanent()) {
+          if (!tmp++) {
             Screen::print() << coord.south().setX(4);
           }
           Screen::print() << coord.south() << object->toString();
         }
       }
     }
-    if (mobile) {
+    if (tmp) {
       Screen::print() << coord.south(2).setX(1);
     }
   }

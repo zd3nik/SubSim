@@ -8,6 +8,7 @@
 #include "utils/Screen.h"
 #include "utils/StringUtils.h"
 #include "db/DBRecord.h"
+#include "Mine.h"
 #include "Obstacle.h"
 #include "Submarine.h"
 
@@ -17,11 +18,9 @@ namespace subsim
 //-----------------------------------------------------------------------------
 bool
 Game::addCommand(const int handle, Input& input, std::string& err) {
-  if (handle < 1) {
+  PlayerPtr player = getPlayer(handle);
+  if (!player) {
     throw Error(Msg() << "Game::addCommand() Invalid player handle: "
-                << handle);
-  } else if (!players.count(handle)) {
-    throw Error(Msg() << "Game::addCommand() Unknown player handle: "
                 << handle);
   }
 
@@ -56,6 +55,15 @@ Game::addCommand(const int handle, Input& input, std::string& err) {
   const std::string type = input.getStr();
   if (type.size() != 1) {
     err = ("Invalid command type: " + type);
+    return false;
+  }
+
+  const Submarine& sub = player->getSubmarine(subID);
+  if (sub.isDead()) {
+    err = ("Command submitted for dead sub ID" + toStr(subID));
+    return false;
+  } else if (sub.isSurfaced()) {
+    err = ("Command submitted for surfaced sub ID " + toStr(subID));
     return false;
   }
 
@@ -108,6 +116,7 @@ Game::getPlayer(const int handle) const {
     for (auto it = players.begin(); it != players.end(); ++it) {
       const PlayerPtr& player = it->second;
       if (player->handle() == handle) {
+        ASSERT(player->getPlayerID() == static_cast<unsigned>(handle));
         return player;
       }
     }
@@ -326,6 +335,7 @@ Game::removePlayer(const int handle) {
       it++;
     }
   }
+  // TODO remove mines deploy by this player
   for (auto it = players.begin(); it != players.end(); ++it) {
     PlayerPtr player = it->second;
     if (player->handle() == handle) {
@@ -453,6 +463,7 @@ Game::executeTurn() {
   exec(Command::FireTorpedo);
   executeNuclearDetonations();
   exec(Command::Surface);
+  executeRepairs();
   exec(Command::Ping);
 
   return errs;
@@ -467,12 +478,10 @@ Game::exec(const Command::CommandType type) {
       PlayerPtr player = getPlayer(playerID);
       SubmarinePtr sub = player->getSubmarinePtr(command->getSubID());
 
-      if (sub->isSurfaced()) {
-        errs[playerID] = "Command issued to surfaced submarine";
+      if (sub->isDead()) {
         continue;
-      } else if (sub->isDead()) {
-        errs[playerID] = "Command issued to dead submarine";
-        continue;
+      } else if (sub->isSurfaced()) {
+        throw Error("Game::exec() command queued for surfaced submarine!");
       } else if (sub->hasDetonated()) {
         throw Error("Game::exec() nuclear detonations out of sync!");
       }
@@ -528,6 +537,7 @@ Game::exec(SubmarinePtr& sub, const MoveCommand& command) {
       sub->charge(command.getEquip()))
   {
     gameMap.moveObject(from, to, sub);
+    detonateMines(gameMap.getSquare(to));
   } else {
     errs[static_cast<int>(sub->getPlayerID())] = "Illegal move command";
   }
@@ -537,16 +547,22 @@ Game::exec(SubmarinePtr& sub, const MoveCommand& command) {
 void
 Game::exec(SubmarinePtr& sub, const SprintCommand& command) {
   const Coordinate from = sub->getLocation();
-  Coordinate to(from);
-  to.shift(command.getDirection(), command.getDistance());
+  Coordinate to(from + command.getDirection());
 
-  if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
-    if (sub->sprint(command.getDistance())) {
-      gameMap.moveObject(from, to, sub);
-      // TODO add sprint to turn results
+  if (sub->sprint(command.getDistance())) {
+    for (unsigned i = 0; i < command.getDistance(); ++i) {
+      to.shift(command.getDirection());
+      if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
+        gameMap.moveObject(from, to, sub);
+        // TODO add sprint to turn results (only once)
+        if (detonateMines(gameMap.getSquare(to))) {
+          break;
+        }
+      } else {
+        errs[static_cast<int>(sub->getPlayerID())] = "Illegal sprint command";
+        break;
+      }
     }
-  } else {
-    errs[static_cast<int>(sub->getPlayerID())] = "Illegal sprint command";
   }
 }
 
@@ -556,7 +572,12 @@ Game::exec(SubmarinePtr& sub, const MineCommand& command) {
   const Coordinate to = (sub->getLocation() + command.getDirection());
   if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
     if (sub->mine()) {
-      // TODO add mine to game map
+      Square& dest = gameMap.getSquare(to);
+      const bool occupied = dest.isOccupied();
+      gameMap.addObject(to, std::make_shared<Mine>(sub->getPlayerID()));
+      if (occupied) {
+        detonateMines(gameMap.getSquare(to));
+      }
     }
   } else {
     errs[static_cast<int>(sub->getPlayerID())] = "Illegal mine command";
@@ -569,7 +590,9 @@ Game::exec(SubmarinePtr& sub, const FireCommand& command) {
   const Coordinate to = command.getDestination();
   if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
     if (sub->fire(gameMap.getSquare(to).getDistanceTo(sub->getLocation()))) {
-      // TODO add torpedo to game map
+      const int playerID = static_cast<int>(sub->getPlayerID());
+      PlayerPtr player = getPlayer(playerID);
+      detonationFrom((*player), gameMap.getSquare(to));
     }
   } else {
     errs[static_cast<int>(sub->getPlayerID())] = "Illegal fire command";
@@ -580,34 +603,22 @@ Game::exec(SubmarinePtr& sub, const FireCommand& command) {
 void
 Game::exec(SubmarinePtr& sub, const SurfaceCommand&) {
   if (!sub->surface()) {
-    throw Error("Game::exec() called on surfaced submarine!");
+    const int playerID = static_cast<int>(sub->getPlayerID());
+    errs[playerID] = "Illegal surface command";
   }
 }
 
 //-----------------------------------------------------------------------------
 void
-Game::exec(SubmarinePtr& sub, const PingCommand& command) {
+Game::exec(SubmarinePtr& sub, const PingCommand&) {
   const Coordinate src = sub->getLocation();
   const unsigned range = sub->ping();
-  const unsigned half = ((range + 1) / 2);
 
-  const unsigned minX = (src.getX() > half) ? (src.getX() - half) : 0;
-  const unsigned maxX = ((src.getX() + half) < gameMap.getWidth())
-      ? (src.getX() + half) : gameMap.getWidth();
-
-  const unsigned minY = (src.getY() > half) ? (src.getY() - half) : 0;
-  const unsigned maxY = ((src.getY() + half) < gameMap.getHeight())
-      ? (src.getY() + half) : gameMap.getHeight();
-
-  for (unsigned x = minX; x <= maxX; ++x) {
-    for (unsigned y = minY; y <= maxY; ++y) {
-      const Coordinate coord(x, y);
-      if (coord != src) {
-        const Square& square = gameMap.getSquare(coord);
-        if (square.isOccupied() && (square.getDistanceTo(src) <= range)) {
-          // TODO add discovered object to turn results
-        }
-      }
+  auto coords = getBlastCoordinates(src, range);
+  for (const Coordinate& coord : coords) {
+    const Square& square = gameMap.getSquare(coord);
+    if (square.isOccupied() && (square.getDistanceTo(src) <= range)) {
+      // TODO add discovered object to turn results
     }
   }
 }
@@ -616,8 +627,166 @@ Game::exec(SubmarinePtr& sub, const PingCommand& command) {
 void
 Game::executeNuclearDetonations() {
   for (SubmarinePtr sub : nuclearDetonations) {
-    // TODO
+    Square& square = gameMap.getSquare(sub->getLocation());
+    for (auto it = square.begin(); it != square.end(); ++it) {
+      Object* object = it->get();
+      if (!object->isPermanent()) {
+        Submarine* sub = dynamic_cast<Submarine*>(object);
+        if (sub) {
+          sub->kill();
+        }
+        it = square.erase(it);
+      } else {
+        it++;
+      }
+    }
+
+    auto coords = getBlastCoordinates(square, 2);
+    for (const Coordinate& coord : coords) {
+      detonateMines(gameMap.getSquare(coord));
+    }
+
+    for (const Coordinate& coord : coords) {
+      Square& adjacentSquare = gameMap.getSquare(coord);
+      for (ObjectPtr& object : adjacentSquare) {
+        Submarine* sub = dynamic_cast<Submarine*>(object.get());
+        if (sub) {
+          switch (blastDistance(square, adjacentSquare)) {
+          case 1:
+            sub->takeHits(2);
+            break;
+          case 2:
+            sub->takeHits(1);
+            break;
+          }
+        }
+      }
+    }
   }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::executeRepairs() {
+  for (auto it = players.begin(); it != players.end(); ++it) {
+    PlayerPtr& player = it->second;
+    for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
+      Submarine& sub = player->getSubmarine(subID);
+      if (!sub.isDead() && sub.isSurfaced()) {
+        sub.repair();
+      }
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+bool
+Game::detonateMines(Square& square) {
+  PlayerPtr player;
+  Coordinate coord;
+
+  for (auto it = square.begin(); it != square.end(); ++it) {
+    Mine* mine = dynamic_cast<Mine*>(it->get());
+    if (mine) {
+      // only detonate first mine (it destroys all other mines on this square)
+      if (!player) {
+        player = getPlayer(static_cast<int>(mine->getPlayerID()));
+        coord.set(square);
+      }
+      it = square.erase(it);
+    } else {
+      it++;
+    }
+  }
+
+  if (player) {
+    detonationFrom((*player), gameMap.getSquare(coord));
+    return true;
+  }
+
+  return false;
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::detonationFrom(Player& player, Square& square) {
+  // TODO add detonation to turn results
+
+  // destroy mines on this square
+  for (auto it = square.begin(); it != square.end(); ++it) {
+    Mine* mine = dynamic_cast<Mine*>(it->get());
+    if (mine) {
+      it = square.erase(it);
+    } else {
+      it++;
+    }
+  }
+
+  // direct hit on submarines in this square
+  inflictDamageFrom(player, square, 2);
+
+  // indirect hit on submarines in adjacent square
+  // and detonate mines in surrounding squares
+  auto coords = getBlastCoordinates(square, 1);
+  for (const Coordinate& coord : coords) {
+    Square& adjacentSquare = gameMap.getSquare(coord);
+    inflictDamageFrom(player, adjacentSquare, 1);
+    detonateMines(adjacentSquare);
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::inflictDamageFrom(Player& player, Square& square, const unsigned damage) {
+  for (ObjectPtr& object : square) {
+    Submarine* sub = dynamic_cast<Submarine*>(object.get());
+    if (sub) {
+      sub->takeHits(damage);
+      if (sub->getPlayerID() != player.getPlayerID()) {
+        player.incScore(damage);
+      }
+      // TODO add hits to turn results
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+unsigned
+Game::blastDistance(const Coordinate& from, const Coordinate& to) const {
+  const unsigned xDiff = (from.getX() > to.getX())
+      ? (from.getX() - to.getX())
+      : (to.getX() - from.getX());
+
+  const unsigned yDiff = (from.getY() > to.getY())
+      ? (from.getY() - to.getY())
+      : (to.getY() - from.getY());
+
+  return std::max<unsigned>(xDiff, yDiff);
+}
+
+//-----------------------------------------------------------------------------
+std::vector<Coordinate>
+Game::getBlastCoordinates(const Coordinate& src, const unsigned range) const {
+  const unsigned minX = (src.getX() > range) ? (src.getX() - range) : 0;
+  const unsigned maxX = ((src.getX() + range) < gameMap.getWidth())
+      ? (src.getX() + range) : gameMap.getWidth();
+
+  const unsigned minY = (src.getY() > range) ? (src.getY() - range) : 0;
+  const unsigned maxY = ((src.getY() + range) < gameMap.getHeight())
+      ? (src.getY() + range) : gameMap.getHeight();
+
+  std::vector<Coordinate> coords;
+  for (unsigned x = minX; x <= maxX; ++x) {
+    for (unsigned y = minY; y <= maxY; ++y) {
+      const Coordinate coord(x, y);
+      if (coord != src) {
+        coords.push_back(coord);
+      }
+    }
+  }
+
+  std::random_shuffle(coords.begin(), coords.end());
+  return std::move(coords);
 }
 
 } // namespace subsim

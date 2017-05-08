@@ -79,6 +79,10 @@ public: // setters
 
 //-----------------------------------------------------------------------------
 public: // getters
+  unsigned getPlayerID() const noexcept {
+    return static_cast<unsigned>(handle());
+  }
+
   std::string getName() const {
     return socket.getLabel();
   }

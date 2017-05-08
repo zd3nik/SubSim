@@ -18,7 +18,7 @@ private: // variables
   unsigned playerID;
   unsigned objectID;
   unsigned size;
-  bool mobile;
+  bool permanent;
   Coordinate location;
 
 //-----------------------------------------------------------------------------
@@ -32,11 +32,11 @@ public: // constructors
   Object(const unsigned playerID,
          const unsigned objectID,
          const unsigned size,
-         const bool mobile) noexcept
+         const bool permanent) noexcept
     : playerID(playerID),
       objectID(objectID),
       size(size),
-      mobile(mobile)
+      permanent(permanent)
   { }
 
 //-----------------------------------------------------------------------------
@@ -59,8 +59,8 @@ public: // getters
     return size;
   }
 
-  unsigned isMobile() const noexcept {
-    return mobile;
+  unsigned isPermanent() const noexcept {
+    return permanent;
   }
 
   const Coordinate& getLocation() const noexcept {

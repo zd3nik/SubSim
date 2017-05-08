@@ -33,7 +33,7 @@ private: // variables
   std::map<int, PlayerPtr> players;
   std::list<UniqueCommand> commands;
   std::list<SubmarinePtr> nuclearDetonations;
-  std::vector<std::list<UniqueCommand>> history;
+  std::list<std::list<UniqueCommand>> history;
   std::map<int, std::string> errs;
   Timestamp started = 0;
   Timestamp aborted = 0;
@@ -104,6 +104,14 @@ private: // methods
   void exec(SubmarinePtr&, const SurfaceCommand&);
   void exec(SubmarinePtr&, const PingCommand&);
   void executeNuclearDetonations();
+  void executeRepairs();
+  bool detonateMines(Square&);
+  void detonationFrom(Player&, Square&);
+  void inflictDamageFrom(Player&, Square&, const unsigned damage);
+
+  unsigned blastDistance(const Coordinate& from, const Coordinate& to) const;
+  std::vector<Coordinate> getBlastCoordinates(const Coordinate&,
+                                              const unsigned range) const;
 };
 
 } // namespace subsim

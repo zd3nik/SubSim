@@ -41,7 +41,7 @@ public: // methods
   }
 
   bool isBlocked() const noexcept {
-    return ((objects.size() == 1) && !objects.front()->isMobile());
+    return ((objects.size() == 1) && objects.front()->isPermanent());
   }
 
   bool contains(ObjectPtr object) const noexcept {
@@ -78,7 +78,7 @@ public: // methods
   unsigned getSizeOfObjects() const noexcept {
     unsigned size = 0;
     for (const auto& object : objects) {
-      if (object->isMobile()) {
+      if (object->getSize() != ~0U) {
         size += object->getSize();
       } else {
         return ~0U;
@@ -97,6 +97,19 @@ public: // methods
 
   std::list<ObjectPtr>::const_iterator end() const noexcept {
     return objects.end();
+  }
+
+  std::list<ObjectPtr>::iterator begin() noexcept {
+    return objects.begin();
+  }
+
+  std::list<ObjectPtr>::iterator end() noexcept {
+    return objects.end();
+  }
+
+  std::list<ObjectPtr>::iterator erase(std::list<ObjectPtr>::iterator it)
+  noexcept {
+    return objects.erase(it);
   }
 
   void resetDistances() {

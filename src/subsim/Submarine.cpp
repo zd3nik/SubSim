@@ -11,14 +11,14 @@ namespace subsim
 //-----------------------------------------------------------------------------
 Submarine::Submarine(const unsigned subID,
                      const unsigned size) noexcept
-  : Object(~0U, subID, size, true)
+  : Object(~0U, subID, size, false)
 { }
 
 //-----------------------------------------------------------------------------
 Submarine::Submarine(const unsigned playerID,
                      const unsigned subID,
                      const Submarine& sub) noexcept
-  : Object(playerID, subID, sub.getSize(), true),
+  : Object(playerID, subID, sub.getSize(), false),
     surfaceTurnCount(sub.surfaceTurnCount),
     maxShields(sub.maxShields),
     maxReactorDamage(sub.maxReactorDamage),
@@ -160,6 +160,22 @@ Submarine::surface() noexcept {
     return true;
   }
   return false;
+}
+
+//-----------------------------------------------------------------------------
+void
+Submarine::kill() noexcept {
+  dead = true;
+}
+
+//-----------------------------------------------------------------------------
+void
+Submarine::repair() noexcept {
+  if (!dead && surfaceTurns) {
+    if ((--surfaceTurns == 0) && (shieldCount < maxShields)) {
+      shieldCount++;
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------

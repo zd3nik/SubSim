@@ -189,6 +189,8 @@ public: // command methods
 
 //-----------------------------------------------------------------------------
 public: // methods
+  void kill() noexcept;
+  void repair() noexcept;
   void takeHits(const unsigned hits) noexcept;
   void takeReactorDamage(const unsigned damage) noexcept;
   void takeReactorStrain(const unsigned strain) noexcept;
