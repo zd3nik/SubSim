@@ -122,6 +122,30 @@ public: // getters
     return surfaceTurns;
   }
 
+  unsigned getMaxShields() const noexcept {
+    return maxShields;
+  }
+
+  unsigned getMaxReactorDamage() const noexcept {
+    return maxReactorDamage;
+  }
+
+  unsigned getMaxSonarCharge() const noexcept {
+    return maxSonarCharge;
+  }
+
+  unsigned getMaxTorpedoCharge() const noexcept {
+    return maxTorpedoCharge;
+  }
+
+  unsigned getMaxMineCharge() const noexcept {
+    return maxMineCharge;
+  }
+
+  unsigned getMaxSprintCharge() const noexcept {
+    return maxSprintCharge;
+  }
+
   unsigned getShieldCount() const noexcept {
     return shieldCount;
   }
@@ -156,18 +180,18 @@ public: // getters
 
 //-----------------------------------------------------------------------------
 public: // command methods
-  void surface() noexcept;
-  bool charge(const Equipment) noexcept;
   unsigned ping() noexcept;
+  bool charge(const Equipment) noexcept;
   bool fire(const unsigned distance) noexcept;
   bool mine() noexcept;
   bool sprint(const unsigned distance) noexcept;
+  bool surface() noexcept;
 
 //-----------------------------------------------------------------------------
 public: // methods
-  bool takeHits(const unsigned hits) noexcept;
-  bool takeReactorDamage(const unsigned damage) noexcept;
-  bool takeReactorStrain(const unsigned strain) noexcept;
+  void takeHits(const unsigned hits) noexcept;
+  void takeReactorDamage(const unsigned damage) noexcept;
+  void takeReactorStrain(const unsigned strain) noexcept;
 };
 
 //-----------------------------------------------------------------------------

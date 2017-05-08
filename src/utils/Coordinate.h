@@ -24,7 +24,6 @@ public: // Printable implementation
 private: // variables
   unsigned x = 0;
   unsigned y = 0;
-  double score = 0;
 
 //-----------------------------------------------------------------------------
 public: // constructors
@@ -34,12 +33,9 @@ public: // constructors
   Coordinate& operator=(Coordinate&&) noexcept = default;
   Coordinate& operator=(const Coordinate&) noexcept = default;
 
-  explicit Coordinate(const unsigned x,
-                      const unsigned y,
-                      const double score = 0) noexcept
+  explicit Coordinate(const unsigned x, const unsigned y) noexcept
     : x(x),
-      y(y),
-      score(score)
+      y(y)
   { }
 
 //-----------------------------------------------------------------------------
@@ -47,24 +43,19 @@ public: // methods
   unsigned getX() const noexcept { return x; }
   unsigned getY() const noexcept { return y; }
   unsigned parity() const noexcept { return ((x & 1) == (y & 1)); }
-  double getScore() const noexcept { return score; }
 
-  Coordinate& set(const unsigned x,
-                  const unsigned y,
-                  const double score = 0) noexcept
-  {
+  Coordinate& set(const unsigned x, const unsigned y) noexcept {
     this->x = x;
     this->y = y;
-    this->score = score;
     return (*this);
   }
 
   Coordinate& clear() noexcept {
-    return set(0, 0, 0);
+    return set(0, 0);
   }
 
   Coordinate& set(const Coordinate& other) noexcept {
-    return set(other.x, other.y, other.score);
+    return set(other.x, other.y);
   }
 
   Coordinate& setX(const unsigned x) noexcept {
@@ -74,11 +65,6 @@ public: // methods
 
   Coordinate& setY(const unsigned y) noexcept {
     this->y = y;
-    return (*this);
-  }
-
-  Coordinate& setScore(const double score) noexcept {
-    this->score = score;
     return (*this);
   }
 

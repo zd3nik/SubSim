@@ -77,46 +77,6 @@ Submarine::toString() const {
 }
 
 //-----------------------------------------------------------------------------
-void
-Submarine::surface() noexcept {
-  surfaceTurns = surfaceTurnCount;
-}
-
-//-----------------------------------------------------------------------------
-bool
-Submarine::charge(const Equipment equip) noexcept {
-  switch (equip) {
-  case None:
-    return takeReactorDamage(1);
-  case Sonar:
-    if (sonarCharge >= maxSonarCharge) {
-      return takeReactorDamage(1);
-    }
-    sonarCharge++;
-    break;
-  case Torpedo:
-    if (torpedoCharge >= maxTorpedoCharge) {
-      return takeReactorDamage(1);
-    }
-    torpedoCharge++;
-    break;
-  case Mine:
-    if (mineCharge >= maxMineCharge) {
-      return takeReactorDamage(1);
-    }
-    mineCharge++;
-    break;
-  case Sprint:
-    if (sprintCharge >= maxSprintCharge) {
-      return takeReactorDamage(1);
-    }
-    sprintCharge++;
-    break;
-  }
-  return false;
-}
-
-//-----------------------------------------------------------------------------
 unsigned
 Submarine::ping() noexcept {
   if (sonarCharge) {
@@ -125,6 +85,37 @@ Submarine::ping() noexcept {
     return range;
   }
   return 0;
+}
+
+//-----------------------------------------------------------------------------
+bool
+Submarine::charge(const Equipment equip) noexcept {
+  switch (equip) {
+  case None:
+    takeReactorDamage(1);
+    return true;
+  case Sonar:
+    if (++sonarCharge >= maxSonarCharge) {
+      takeReactorDamage(1);
+    }
+    return true;
+  case Torpedo:
+    if (++torpedoCharge >= maxTorpedoCharge) {
+      takeReactorDamage(1);
+    }
+    return true;
+  case Mine:
+    if (++mineCharge >= maxMineCharge) {
+      takeReactorDamage(1);
+    }
+    return true;
+  case Sprint:
+    if (++sprintCharge >= maxSprintCharge) {
+      takeReactorDamage(1);
+    }
+    return true;
+  }
+  return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -155,13 +146,24 @@ Submarine::sprint(const unsigned distance) noexcept {
   const unsigned chargeDistance = ((sprintCharge / 3) + 1);
   sprintCharge = 0;
   if (chargeDistance >= distance) {
-    return !takeReactorStrain(chargeDistance);
+    takeReactorStrain(chargeDistance);
+    return true;
   }
   return false;
 }
 
 //-----------------------------------------------------------------------------
 bool
+Submarine::surface() noexcept {
+  if (!surfaceTurns) {
+    surfaceTurns = surfaceTurnCount;
+    return true;
+  }
+  return false;
+}
+
+//-----------------------------------------------------------------------------
+void
 Submarine::takeHits(const unsigned hits) noexcept {
   if (hits > shieldCount) {
     shieldCount = 0;
@@ -169,26 +171,23 @@ Submarine::takeHits(const unsigned hits) noexcept {
   } else {
     shieldCount -= hits;
   }
-  return dead;
 }
 
 //-----------------------------------------------------------------------------
-bool
+void
 Submarine::takeReactorDamage(const unsigned damage) noexcept {
   if ((reactorDamage += damage) >= maxReactorDamage) {
     dead = detonated = true;
   }
-  return dead;
 }
 
 //-----------------------------------------------------------------------------
-bool
+void
 Submarine::takeReactorStrain(const unsigned strain) noexcept {
   if ((reactorDamage + strain) >= maxReactorDamage) {
     reactorDamage += strain;
     dead = detonated = true;
   }
-  return dead;
 }
 
 } // namespace subsim

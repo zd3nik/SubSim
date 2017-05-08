@@ -9,8 +9,8 @@
 #include "utils/Input.h"
 #include "utils/Movement.h"
 #include "utils/Msg.h"
+#include "../Submarine.h"
 #include "Command.h"
-#include "Submarine.h"
 
 namespace subsim
 {
@@ -69,6 +69,16 @@ public: // Command::Printable implementaion
   std::string toString() const override {
     return Msg(TYPE) << getTurnNumber() << getSubID()
                      << dirLetter << Submarine::equipmentName(equip);
+  }
+
+//-----------------------------------------------------------------------------
+public: // getters
+  Direction getDirection() const noexcept {
+    return dir;
+  }
+
+  Submarine::Equipment getEquip() const noexcept {
+    return equip;
   }
 };
 

@@ -7,8 +7,8 @@
 #include "utils/Platform.h"
 #include "utils/Error.h"
 #include "utils/Input.h"
+#include "../Submarine.h"
 #include "Command.h"
-#include "Submarine.h"
 
 namespace subsim
 {
@@ -46,6 +46,16 @@ public: // constructors
 public: // Command::Printable implementaion
   std::string toString() const override {
     return Msg(TYPE) << getTurnNumber() << getSubID();
+  }
+
+//-----------------------------------------------------------------------------
+public: // getters
+  Submarine::Equipment getEquip1() const noexcept {
+    return equip1;
+  }
+
+  Submarine::Equipment getEquip2() const noexcept {
+    return equip2;
   }
 };
 

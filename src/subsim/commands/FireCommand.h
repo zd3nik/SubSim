@@ -50,6 +50,12 @@ public: // Command::Printable implementaion
     return Msg(TYPE) << getTurnNumber() << getSubID()
                      << dest.getX() << dest.getY();
   }
+
+//-----------------------------------------------------------------------------
+public: // getters
+  Coordinate getDestination() const noexcept {
+    return dest;
+  }
 };
 
 } // namespace subsim

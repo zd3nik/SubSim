@@ -8,13 +8,6 @@
 #include "utils/Screen.h"
 #include "utils/StringUtils.h"
 #include "db/DBRecord.h"
-#include "commands/FireCommand.h"
-#include "commands/MineCommand.h"
-#include "commands/MoveCommand.h"
-#include "commands/PingCommand.h"
-#include "commands/SleepCommand.h"
-#include "commands/SprintCommand.h"
-#include "commands/SurfaceCommand.h"
 #include "Obstacle.h"
 #include "Submarine.h"
 
@@ -183,6 +176,13 @@ Game::reset(const GameConfig& gameConfig, const std::string& gameTitle) {
   for (const Coordinate& coord : config.getObstacles()) {
     gameMap.addObject(coord, std::make_unique<Obstacle>());
   }
+
+  maxRange = 0;
+  for (const Submarine& sub : config.getSubmarineConfigs()) {
+    maxRange = std::max<unsigned>(maxRange, sub.getMaxSonarCharge());
+    maxRange = std::max<unsigned>(maxRange, sub.getMaxTorpedoCharge());
+  }
+  maxRange += 2;
 }
 
 //-----------------------------------------------------------------------------
@@ -235,6 +235,8 @@ Game::nextTurn() {
     commandList.push_back(std::move(*it));
   }
   commands.clear();
+  nuclearDetonations.clear();
+  errs.clear();
 
   if (turnNumber >= config.getMaxTurns()) {
     finish();
@@ -437,30 +439,185 @@ Game::allCommandsReceived() const noexcept {
 }
 
 //-----------------------------------------------------------------------------
-unsigned
-Game::getMaxRange() const {
-  // TODO find max sonar/torpedo range of all active submarines
-  return std::max<unsigned>(config.getMapWidth(), config.getMapHeight());
+std::map<int, std::string>
+Game::executeTurn() {
+  nuclearDetonations.clear();
+  errs.clear();
+
+  gameMap.updateDistances(maxRange);
+
+  exec(Command::Sleep);
+  exec(Command::Move);
+  exec(Command::Sprint);
+  exec(Command::DeployMine);
+  exec(Command::FireTorpedo);
+  executeNuclearDetonations();
+  exec(Command::Surface);
+  exec(Command::Ping);
+
+  return errs;
 }
 
 //-----------------------------------------------------------------------------
-std::map<int, std::string>
-Game::executeTurn() {
-  errs.clear();
+void
+Game::exec(const Command::CommandType type) {
+  for (const UniqueCommand& command : commands) {
+    if (command->getType() == type) {
+      const int playerID = static_cast<int>(command->getPlayerID());
+      PlayerPtr player = getPlayer(playerID);
+      SubmarinePtr sub = player->getSubmarinePtr(command->getSubID());
 
-  gameMap.updateDistances(getMaxRange());
+      if (sub->isSurfaced()) {
+        errs[playerID] = "Command issued to surfaced submarine";
+        continue;
+      } else if (sub->isDead()) {
+        errs[playerID] = "Command issued to dead submarine";
+        continue;
+      } else if (sub->hasDetonated()) {
+        throw Error("Game::exec() nuclear detonations out of sync!");
+      }
 
-  // TODO
-//  executeSleeps();
-//  executeMoves();
-//  executeSprints();
-//  executeMineDeployments();
-//  executeFireTorpedos();
-//  executeNuclearDetonations();
-//  executeSurfaces();
-//  executePings();
+      switch (type) {
+      case Command::Invalid:
+        throw Error("Invalid command in command queue");
+      case Command::Sleep:
+        exec(sub, static_cast<const SleepCommand&>(*command));
+        break;
+      case Command::Move:
+        exec(sub, static_cast<const MoveCommand&>(*command));
+        break;
+      case Command::Sprint:
+        exec(sub, static_cast<const SprintCommand&>(*command));
+        break;
+      case Command::DeployMine:
+        exec(sub, static_cast<const MineCommand&>(*command));
+        break;
+      case Command::FireTorpedo:
+        exec(sub, static_cast<const FireCommand&>(*command));
+        break;
+      case Command::Surface:
+        exec(sub, static_cast<const SurfaceCommand&>(*command));
+        break;
+      case Command::Ping:
+        exec(sub, static_cast<const PingCommand&>(*command));
+        break;
+      }
 
-  return errs;
+      if (sub->hasDetonated()) {
+        nuclearDetonations.push_back(sub);
+      }
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::exec(SubmarinePtr& sub, const SleepCommand& command) {
+  if (!sub->charge(command.getEquip1()) || !sub->charge(command.getEquip2())) {
+    errs[static_cast<int>(sub->getPlayerID())] = "Illegal sleep command";
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::exec(SubmarinePtr& sub, const MoveCommand& command) {
+  const Coordinate from = sub->getLocation();
+  const Coordinate to = (from + command.getDirection());
+
+  if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked() &&
+      sub->charge(command.getEquip()))
+  {
+    gameMap.moveObject(from, to, sub);
+  } else {
+    errs[static_cast<int>(sub->getPlayerID())] = "Illegal move command";
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::exec(SubmarinePtr& sub, const SprintCommand& command) {
+  const Coordinate from = sub->getLocation();
+  Coordinate to(from);
+  to.shift(command.getDirection(), command.getDistance());
+
+  if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
+    if (sub->sprint(command.getDistance())) {
+      gameMap.moveObject(from, to, sub);
+      // TODO add sprint to turn results
+    }
+  } else {
+    errs[static_cast<int>(sub->getPlayerID())] = "Illegal sprint command";
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::exec(SubmarinePtr& sub, const MineCommand& command) {
+  const Coordinate to = (sub->getLocation() + command.getDirection());
+  if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
+    if (sub->mine()) {
+      // TODO add mine to game map
+    }
+  } else {
+    errs[static_cast<int>(sub->getPlayerID())] = "Illegal mine command";
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::exec(SubmarinePtr& sub, const FireCommand& command) {
+  const Coordinate to = command.getDestination();
+  if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
+    if (sub->fire(gameMap.getSquare(to).getDistanceTo(sub->getLocation()))) {
+      // TODO add torpedo to game map
+    }
+  } else {
+    errs[static_cast<int>(sub->getPlayerID())] = "Illegal fire command";
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::exec(SubmarinePtr& sub, const SurfaceCommand&) {
+  if (!sub->surface()) {
+    throw Error("Game::exec() called on surfaced submarine!");
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::exec(SubmarinePtr& sub, const PingCommand& command) {
+  const Coordinate src = sub->getLocation();
+  const unsigned range = sub->ping();
+  const unsigned half = ((range + 1) / 2);
+
+  const unsigned minX = (src.getX() > half) ? (src.getX() - half) : 0;
+  const unsigned maxX = ((src.getX() + half) < gameMap.getWidth())
+      ? (src.getX() + half) : gameMap.getWidth();
+
+  const unsigned minY = (src.getY() > half) ? (src.getY() - half) : 0;
+  const unsigned maxY = ((src.getY() + half) < gameMap.getHeight())
+      ? (src.getY() + half) : gameMap.getHeight();
+
+  for (unsigned x = minX; x <= maxX; ++x) {
+    for (unsigned y = minY; y <= maxY; ++y) {
+      const Coordinate coord(x, y);
+      if (coord != src) {
+        const Square& square = gameMap.getSquare(coord);
+        if (square.isOccupied() && (square.getDistanceTo(src) <= range)) {
+          // TODO add discovered object to turn results
+        }
+      }
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+void
+Game::executeNuclearDetonations() {
+  for (SubmarinePtr sub : nuclearDetonations) {
+    // TODO
+  }
 }
 
 } // namespace subsim

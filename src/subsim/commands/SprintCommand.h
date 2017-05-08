@@ -70,6 +70,16 @@ public: // Command::Printable implementaion
   std::string toString() const override {
     return Msg(TYPE) << getTurnNumber() << getSubID() << dirLetter << dist;
   }
+
+//-----------------------------------------------------------------------------
+public: // getters
+  Direction getDirection() const noexcept {
+    return dir;
+  }
+
+  unsigned getDistance() const noexcept {
+    return dist;
+  }
 };
 
 } // namespace subsim

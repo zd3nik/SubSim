@@ -8,7 +8,14 @@
 #include "utils/Input.h"
 #include "utils/Timer.h"
 #include "db/Database.h"
-#include "Command.h"
+#include "commands/Command.h"
+#include "commands/FireCommand.h"
+#include "commands/MineCommand.h"
+#include "commands/MoveCommand.h"
+#include "commands/PingCommand.h"
+#include "commands/SleepCommand.h"
+#include "commands/SprintCommand.h"
+#include "commands/SurfaceCommand.h"
 #include "GameConfig.h"
 #include "GameMap.h"
 #include "Player.h"
@@ -25,12 +32,14 @@ private: // variables
   GameMap gameMap;
   std::map<int, PlayerPtr> players;
   std::list<UniqueCommand> commands;
+  std::list<SubmarinePtr> nuclearDetonations;
   std::vector<std::list<UniqueCommand>> history;
   std::map<int, std::string> errs;
   Timestamp started = 0;
   Timestamp aborted = 0;
   Timestamp finished = 0;
   unsigned turnNumber = 0;
+  unsigned maxRange = 0;
 
 //-----------------------------------------------------------------------------
 public: // constructors
@@ -86,15 +95,15 @@ public: // methods
 
 //-----------------------------------------------------------------------------
 private: // methods
-  unsigned getMaxRange() const;
-  void executeSleeps();
-  void executeMoves();
-  void executeSprints();
-  void executeMineDeployments();
-  void executeFireTorpedos();
+  void exec(const Command::CommandType);
+  void exec(SubmarinePtr&, const SleepCommand&);
+  void exec(SubmarinePtr&, const MoveCommand&);
+  void exec(SubmarinePtr&, const SprintCommand&);
+  void exec(SubmarinePtr&, const MineCommand&);
+  void exec(SubmarinePtr&, const FireCommand&);
+  void exec(SubmarinePtr&, const SurfaceCommand&);
+  void exec(SubmarinePtr&, const PingCommand&);
   void executeNuclearDetonations();
-  void executeSurfaces();
-  void executePings();
 };
 
 } // namespace subsim
