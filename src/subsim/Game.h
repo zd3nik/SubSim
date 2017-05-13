@@ -86,13 +86,13 @@ public: // methods
   std::vector<PlayerPtr> getPlayers() const;
   std::vector<PlayerPtr> playersFromAddress(const std::string address) const;
 
+  std::map<unsigned, std::string> start();
   std::map<unsigned, std::string> executeTurn();
 
   void reset(const GameConfig& gameConfig, const std::string& gameTitle);
   void printSummary(Coordinate&) const;
   void abort() noexcept;
   void finish() noexcept;
-  void start();
 
   std::string addPlayer(PlayerPtr, Input&);
   void removePlayer(const int playerHandle);

@@ -297,7 +297,11 @@ Server::addPlayerHandle() {
 void
 Server::beginGame() {
   stopListening();
-  game.start();
+
+  std::map<unsigned, std::string> errs = game.start();
+  for (auto it = errs.begin(); it != errs.end(); ++it) {
+    removePlayer(static_cast<int>(it->first), it->second);
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -399,16 +403,17 @@ void
 Server::handlePlayerInput(const int handle) {
   if (!input.readln(handle)) {
     removePlayer(handle);
-    return;
+  } else {
+    std::string err;
+    std::string str = input.getStr();
+    if (str == "J") {
+      joinGame(handle);
+    } else if (!game.addCommand(handle, input, err)) {
+      removePlayer(handle, err);
+    }
   }
 
-  std::string err;
-  std::string str = input.getStr();
-  if (str == "J") {
-    joinGame(handle);
-  } else if (!game.addCommand(handle, input, err)) {
-    removePlayer(handle, err);
-  } else if (game.allCommandsReceived()) {
+  if (game.allCommandsReceived()) {
     std::map<unsigned, std::string> errs = game.executeTurn();
     for (auto it = errs.begin(); it != errs.end(); ++it) {
       removePlayer(static_cast<int>(it->first), it->second);

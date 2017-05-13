@@ -217,7 +217,7 @@ Game::finish() noexcept {
 }
 
 //-----------------------------------------------------------------------------
-void
+std::map<unsigned, std::string>
 Game::start() {
   config.validate();
   if (started) {
@@ -230,6 +230,11 @@ Game::start() {
   }
   started = Timer::now();
   turnNumber = 1;
+  errs.clear();
+
+  sendToAll(Msg('B') << turnNumber);
+
+  return errs;
 }
 
 //-----------------------------------------------------------------------------
@@ -300,7 +305,7 @@ Game::addPlayer(PlayerPtr player, Input& input) {
 //-----------------------------------------------------------------------------
 void
 Game::removePlayer(const int handle) {
-  for (auto it = commands.begin(); it != commands.end(); ++it) {
+  for (auto it = commands.begin(); it != commands.end(); ) {
     const UniqueCommand& command = (*it);
     if (command->getPlayerID() == static_cast<unsigned>(handle)) {
       it = commands.erase(it);
@@ -417,7 +422,62 @@ Game::canStart() const noexcept {
 //-----------------------------------------------------------------------------
 bool
 Game::allCommandsReceived() const noexcept {
-  return (commands.size() == (players.size() * config.getSubsPerPlayer()));
+  if (!started || isFinished() || commands.empty()) {
+    return false;
+  }
+
+  std::map<unsigned, std::set<unsigned>> ids;
+  for (auto it = players.begin(); it != players.end(); ++it) {
+    const PlayerPtr& player = it->second;
+    if (!player) {
+      throw Error("Null player in game.players map");
+    }
+    for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
+      const Submarine& sub = player->getSubmarine(subID);
+      if (!sub.isDead() && !sub.isSurfaced()) {
+        ids[player->getPlayerID()].insert(subID);
+      }
+    }
+  }
+
+  if (ids.empty()) {
+    return false;
+  }
+
+  for (auto it = commands.begin(); it != commands.end(); ++it) {
+    const UniqueCommand& commandPtr = (*it);
+    if (!commandPtr) {
+      throw Error("Null command in command list");
+    }
+
+    const Command& command = (*commandPtr);
+    if (command.getType() == Command::Invalid) {
+      throw Error("Invalid command in command list");
+    } else if (command.getTurnNumber() != turnNumber) {
+      throw Error(Msg() << "Incorrect turn number (" << command.getTurnNumber()
+                  << " in command from command list");
+    }
+
+    auto player = ids.find(command.getPlayerID());
+    if (player == ids.end()) {
+      throw Error(Msg() << "Command for dead player ID ("
+                  << command.getPlayerID() << ") in command list");
+    }
+
+    auto sub = player->second.find(command.getSubID());
+    if (sub == player->second.end()) {
+      throw Error(Msg() << "Command for dead sub ID (" << command.getSubID()
+                  << ") player ID (" << command.getPlayerID()
+                  << ") in command list");
+    }
+
+    player->second.erase(sub);
+    if (player->second.empty()) {
+      ids.erase(player);
+    }
+  }
+
+  return ids.empty();
 }
 
 //-----------------------------------------------------------------------------
@@ -505,7 +565,8 @@ Game::sendScore(Player& player) {
 }
 
 //-----------------------------------------------------------------------------
-std::map<unsigned, std::string> Game::executeTurn() {
+std::map<unsigned, std::string>
+Game::executeTurn() {
   if (!started) {
     throw Error("Game::executeTurn() game has not been started");
   } else if (!turnNumber) {
@@ -546,7 +607,7 @@ std::map<unsigned, std::string> Game::executeTurn() {
   for (auto it = players.begin(); it != players.end(); ) {
     PlayerPtr& player = it->second;
     if (!player) {
-      throw Error("null player in game.players list");
+      throw Error("Null player in game.players map");
     }
     if (!sendDiscoveredObjects(*player) ||
         !sendTorpedoHits(*player) ||
@@ -566,14 +627,9 @@ std::map<unsigned, std::string> Game::executeTurn() {
     }
   }
 
-  if (turnNumber >= config.getMaxTurns()) {
+  if ((turnNumber >= config.getMaxTurns()) || (players.size() < 2)) {
     finish();
-  } else if (players.size() < 2) {
-    Logger::error() << "Aborting game because player count dropped to "
-                    << players.size();
-    abort();
-  }
-  else {
+  } else {
     turnNumber++;
   }
 
@@ -748,7 +804,7 @@ Game::executeNuclearDetonations() {
   for (SubmarinePtr sub : nuclearDetonations) {
     detonations.push_back(std::make_pair(sub->getLocation(), 2U));
     Square& square = gameMap.getSquare(sub->getLocation());
-    for (auto it = square.begin(); it != square.end(); ++it) {
+    for (auto it = square.begin(); it != square.end(); ) {
       Object* object = it->get();
       if (!object->isPermanent()) {
         Submarine* sub = dynamic_cast<Submarine*>(object);
@@ -806,7 +862,7 @@ Game::detonateMines(Square& square) {
   PlayerPtr player;
   Coordinate coord;
 
-  for (auto it = square.begin(); it != square.end(); ++it) {
+  for (auto it = square.begin(); it != square.end(); ) {
     Mine* mine = dynamic_cast<Mine*>(it->get());
     if (mine) {
       // only detonate first mine (it destroys all other mines on this square)
@@ -834,7 +890,7 @@ Game::detonationFrom(Player& player, const unsigned type, Square& square) {
   detonations.push_back(std::make_pair(Coordinate(square), 1U));
 
   // destroy mines on this square
-  for (auto it = square.begin(); it != square.end(); ++it) {
+  for (auto it = square.begin(); it != square.end(); ) {
     Mine* mine = dynamic_cast<Mine*>(it->get());
     if (mine) {
       it = square.erase(it);
