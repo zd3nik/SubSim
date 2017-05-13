@@ -11,7 +11,7 @@ The number of `VALUE` fields in a message is determined by the `TYPE`.
 
 The `TYPE` field is always a single ASCII character.  This is so you can easily check the message type by examining the first two characters of the message, which will always be the type character followed by a pipe `|` character. **Only checking the first character to determine the message type could lead to errors.**  For example, if you receive `Protocol Error` the message type is *not* `P`, it is an error message or an errant/invalid message and should be treated as an error message.
 
-Any message that does not follow the prescribed format should be treated as an `ERROR MESSAGE`.
+Any message that does not follow the prescribed format should be treated as an error message.
 
 Leading and trailing whitespace characters should be stripped from each field.
 
@@ -186,7 +186,6 @@ More info:
     Mine Hit             |  M|tn|X|Y|damage
     Submarine Info       |  I|tn|id|X|Y|shield_count|core_damage|surfaced|dead
     Player Score (Hits)  |  H|tn|score
-    Error Message        |  E|tn|message
     Game Finished        |  F|turn_count
     Player Result        |  P|name|score|turn_count|message
 
@@ -349,15 +348,6 @@ More info:
                       |    tn      = The turn number.
                       |    score   = The total points of damage you have inflicted on enemy
                       |              submarines so far in the current game.
-    ------------------|---------------------------------------------------------------------------
-    E|tn|message      |  For each unrecognized or invalid command received from a player in a
-                      |  turn one of these will be sent to the player that issues the invalid
-                      |  command.
-                      |
-                      |  Fields:
-                      |
-                      |    tn      = The turn number.
-                      |    message = The error message
     ------------------|---------------------------------------------------------------------------
     F|players|        |  This message is sent to all players when the game is finished.
       turns|          |

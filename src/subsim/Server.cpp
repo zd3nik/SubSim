@@ -409,11 +409,10 @@ Server::handlePlayerInput(const int handle) {
   } else if (!game.addCommand(handle, input, err)) {
     removePlayer(handle, err);
   } else if (game.allCommandsReceived()) {
-    std::map<int, std::string> errs = game.executeTurn();
+    std::map<unsigned, std::string> errs = game.executeTurn();
     for (auto it = errs.begin(); it != errs.end(); ++it) {
-      removePlayer(it->first, it->second);
+      removePlayer(static_cast<int>(it->first), it->second);
     }
-    game.nextTurn();
   }
 }
 

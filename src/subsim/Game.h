@@ -33,13 +33,19 @@ private: // variables
   std::map<int, PlayerPtr> players;
   std::list<UniqueCommand> commands;
   std::list<SubmarinePtr> nuclearDetonations;
-  std::list<std::list<UniqueCommand>> history;
-  std::map<int, std::string> errs;
+  std::list<std::pair<Coordinate, unsigned>> detonations;
+  std::map<unsigned, std::list<std::pair<Coordinate, unsigned>>> discovered;
+  std::map<unsigned, std::map<Coordinate, unsigned>> torpedoHits;
+  std::map<unsigned, std::map<Coordinate, unsigned>> mineHits;
+  std::map<unsigned, unsigned> points;
+  std::map<unsigned, std::string> errs;
   Timestamp started = 0;
   Timestamp aborted = 0;
   Timestamp finished = 0;
   unsigned turnNumber = 0;
   unsigned maxRange = 0;
+  unsigned sonarActivations = 0;
+  unsigned sprintActivations = 0;
 
 //-----------------------------------------------------------------------------
 public: // constructors
@@ -80,14 +86,13 @@ public: // methods
   std::vector<PlayerPtr> getPlayers() const;
   std::vector<PlayerPtr> playersFromAddress(const std::string address) const;
 
-  std::map<int, std::string> executeTurn();
+  std::map<unsigned, std::string> executeTurn();
 
   void reset(const GameConfig& gameConfig, const std::string& gameTitle);
   void printSummary(Coordinate&) const;
   void abort() noexcept;
   void finish() noexcept;
   void start();
-  void nextTurn();
 
   std::string addPlayer(PlayerPtr, Input&);
   void removePlayer(const int playerHandle);
@@ -95,6 +100,14 @@ public: // methods
 
 //-----------------------------------------------------------------------------
 private: // methods
+  void sendToAll(const std::string& message);
+  bool sendTo(Player&, const std::string& message);
+  bool sendDiscoveredObjects(Player&);
+  bool sendTorpedoHits(Player&);
+  bool sendMineHits(Player&);
+  bool sendSubInfo(Player&);
+  bool sendScore(Player&);
+
   void exec(const Command::CommandType);
   void exec(SubmarinePtr&, const SleepCommand&);
   void exec(SubmarinePtr&, const MoveCommand&);
@@ -103,11 +116,13 @@ private: // methods
   void exec(SubmarinePtr&, const FireCommand&);
   void exec(SubmarinePtr&, const SurfaceCommand&);
   void exec(SubmarinePtr&, const PingCommand&);
+
   void executeNuclearDetonations();
   void executeRepairs();
   bool detonateMines(Square&);
-  void detonationFrom(Player&, Square&);
-  void inflictDamageFrom(Player&, Square&, const unsigned damage);
+  void detonationFrom(Player&, const unsigned type, Square&);
+  void inflictDamageFrom(Player&, const unsigned type, Square&,
+                         const unsigned damage);
 
   unsigned blastDistance(const Coordinate& from, const Coordinate& to) const;
   std::vector<Coordinate> getBlastCoordinates(const Coordinate&,
