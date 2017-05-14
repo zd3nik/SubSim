@@ -115,7 +115,9 @@ GameMap::moveObject(const Coordinate& from,
 {
   Square& fromSquare = getSquare(from);
   Square& toSquare = getSquare(to);
-  if (toSquare.isBlocked()) {
+  if (!object) {
+    throw Error("GameMap::moveObject() null object");
+  } else if (toSquare.isBlocked()) {
     throw Error(Msg() << toSquare << " is blocked, can't add objects to it");
   } else if (!fromSquare.removeObject(object)) {
     throw Error(Msg() << fromSquare << " does not contain " << (*object));
@@ -126,53 +128,54 @@ GameMap::moveObject(const Coordinate& from,
 }
 
 //-----------------------------------------------------------------------------
-void
-GameMap::updateDistances(const unsigned maxDist) {
-  maxDistance = maxDist;
-  for (auto& square : squares) {
-    square->resetDistances();
+std::map<Coordinate, unsigned>
+GameMap::squaresInRangeOf(const Coordinate& coord,
+                          const unsigned range) const
+{
+  if (!contains(coord)) {
+    throw Error(Msg() << "Invalid coordinates: " << coord);
   }
-
-  for (auto& square : squares) {
-    if (square->isOccupied()) {
-      square->setDistanceTo((*square), 0);
-      updateDistance((*square), (*square), 1);
-    }
+  std::map<Coordinate, unsigned> destinations;
+  destinations[coord] = 0;
+  if (range > 0) {
+    addDestinations(destinations, coord, 1, range);
   }
+  return std::move(destinations);
 }
 
 //-----------------------------------------------------------------------------
 void
-GameMap::updateDistance(Square& origin,
-                        const Square& square,
-                        const unsigned currentDistance)
+GameMap::addDestinations(std::map<Coordinate, unsigned>& dests,
+                         const Coordinate& coord,
+                         const unsigned distance,
+                         const unsigned range) const
 {
-  if (currentDistance > maxDistance) {
-    return;
-  }
-
-  std::vector<unsigned> destinations;
-  for (Direction dir : { Direction::North,
+  ASSERT(distance <= range);
+  std::vector<unsigned> next;
+  for (Direction dir : {
+       Direction::North,
        Direction::East,
        Direction::South,
        Direction::West })
   {
-    const unsigned destIndex = toIndex(square + dir);
+    const unsigned destIndex = toIndex(coord + dir);
     if (destIndex < squares.size()) {
-      Square& destination = (*squares[destIndex]);
-      const unsigned previousDistance = destination.getDistanceTo(origin);
-      if (currentDistance < previousDistance) {
-        destination.setDistanceTo(origin, currentDistance);
-        origin.setDistanceTo(destination, currentDistance);
-        if (destination.isEmpty()) {
-          destinations.push_back(destIndex);
+      Square& dest = (*squares[destIndex]);
+      const auto it = dests.find(dest);
+      const unsigned previousDist = (it == dests.end()) ? ~0U : it->second;
+      if (distance < previousDist) {
+        dests[dest] = distance;
+        if (dest.isEmpty()) {
+          next.push_back(destIndex);
         }
       }
     }
   }
 
-  for (unsigned destIndex : destinations) {
-    updateDistance(origin, (*squares[destIndex]), (currentDistance + 1));
+  if (distance < range) {
+    for (unsigned idx : next) {
+      addDestinations(dests, (*squares[idx]), (distance + 1), range);
+    }
   }
 }
 

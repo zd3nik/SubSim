@@ -30,6 +30,14 @@ Game::addCommand(const int handle, Input& input, std::string& err) {
                 << handle);
   }
 
+  if (!isStarted()) {
+    err = "Game has not started";
+    return false;
+  } else if (isFinished()) {
+    err = "Game is finished";
+    return false;
+  }
+
   std::set<unsigned> subIDs;
   const unsigned playerID = static_cast<unsigned>(handle);
   for (const auto& command : commands) {
@@ -45,13 +53,13 @@ Game::addCommand(const int handle, Input& input, std::string& err) {
 
   const unsigned tn = input.getUInt(1, ~0U);
   if (tn != turnNumber) {
-    err = ("Invalid turn number: " + input.getStr(0));
+    err = ("Invalid turn number: " + input.getStr(1));
     return false;
   }
 
   const unsigned subID = input.getUInt(2, ~0U);
   if (subID >= config.getSubsPerPlayer()) {
-    err = ("Invalid sub ID: " + toStr(subID));
+    err = ("Invalid sub ID: " + input.getStr(2));
     return false;
   } else if (subIDs.count(subID)) {
     err = ("Multiple commands for sub ID " + toStr(subID));
@@ -191,13 +199,6 @@ Game::reset(const GameConfig& gameConfig, const std::string& gameTitle) {
   for (const Coordinate& coord : config.getObstacles()) {
     gameMap.addObject(coord, std::make_unique<Obstacle>());
   }
-
-  maxRange = 0;
-  for (const Submarine& sub : config.getSubmarineConfigs()) {
-    maxRange = std::max<unsigned>(maxRange, sub.getMaxSonarCharge());
-    maxRange = std::max<unsigned>(maxRange, sub.getMaxTorpedoCharge());
-  }
-  maxRange += 2;
 }
 
 //-----------------------------------------------------------------------------
@@ -582,8 +583,6 @@ Game::executeTurn() {
   mineHits.clear();
   errs.clear();
 
-  gameMap.updateDistances(maxRange);
-
   exec(Command::Sleep);
   exec(Command::Move);
   exec(Command::Sprint);
@@ -593,6 +592,8 @@ Game::executeTurn() {
   exec(Command::Surface);
   executeRepairs();
   exec(Command::Ping);
+
+  commands.clear();
 
   if (sonarActivations) {
     sendToAll(Msg('S') << turnNumber << sonarActivations);
@@ -627,13 +628,14 @@ Game::executeTurn() {
     }
   }
 
-  if ((turnNumber >= config.getMaxTurns()) || (players.size() < 2)) {
+  if ((players.size() < 2) ||
+      (config.getMaxTurns() && (turnNumber >= config.getMaxTurns())))
+  {
     finish();
   } else {
-    turnNumber++;
+    sendToAll(Msg('B') << ++turnNumber);
   }
 
-  commands.clear();
   return errs;
 }
 
@@ -760,10 +762,14 @@ void
 Game::exec(SubmarinePtr& sub, const FireCommand& command) {
   const Coordinate to = command.getDestination();
   if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
-    if (sub->fire(gameMap.getSquare(to).getDistanceTo(sub->getLocation()))) {
+    const auto dests = gameMap.squaresInRangeOf(sub->getLocation(),
+                                                sub->getTorpedoRange());
+    const auto it = dests.find(to);
+    const unsigned distance = (it == dests.end()) ? ~0U : it->second;
+    if (sub->fire(distance)) {
       PlayerPtr player = getPlayer(static_cast<int>(sub->getPlayerID()));
       if (player) {
-        detonationFrom((*player), TORPEDO, gameMap.getSquare(to));
+        detonationFrom(player, to, TORPEDO, gameMap.getSquare(to));
       }
     }
   } else {
@@ -782,18 +788,20 @@ Game::exec(SubmarinePtr& sub, const SurfaceCommand&) {
 //-----------------------------------------------------------------------------
 void
 Game::exec(SubmarinePtr& sub, const PingCommand&) {
-  const Coordinate src = sub->getLocation();
   const unsigned range = sub->ping();
   if (range) {
     sonarActivations++;
-  }
-
-  auto coords = getBlastCoordinates(src, range);
-  for (const Coordinate& coord : coords) {
-    const Square& square = gameMap.getSquare(coord);
-    if (square.isOccupied() && (square.getDistanceTo(src) <= range)) {
-      discovered[sub->getPlayerID()].push_back(
-            std::make_pair(Coordinate(square), square.getSizeOfObjects()));
+    auto dests = gameMap.squaresInRangeOf(sub->getLocation(), range);
+    for (auto it = dests.begin(); it != dests.end(); ++it) {
+      if (it->second > 0) {
+        const Square& square = gameMap.getSquare(it->first);
+        if (square.isOccupied()) {
+          discovered[sub->getPlayerID()].push_back(
+                std::make_pair(it->first, square.getSizeOfObjects()));
+        }
+      } else {
+        ASSERT(it->first == sub->getLocation());
+      }
     }
   }
 }
@@ -876,8 +884,8 @@ Game::detonateMines(Square& square) {
     }
   }
 
-  if (player) {
-    detonationFrom((*player), MINE, gameMap.getSquare(coord));
+  if (coord) {
+    detonationFrom(player, square, MINE, gameMap.getSquare(coord));
     return true;
   }
 
@@ -886,38 +894,41 @@ Game::detonateMines(Square& square) {
 
 //-----------------------------------------------------------------------------
 void
-Game::detonationFrom(Player& player, const unsigned type, Square& square) {
-  detonations.push_back(std::make_pair(Coordinate(square), 1U));
+Game::detonationFrom(PlayerPtr& player, const Coordinate& sourceSquare,
+                     const unsigned type, Square& damagedSquare)
+{
+  detonations.push_back(std::make_pair(Coordinate(damagedSquare), 1U));
 
   // destroy mines on this square
-  for (auto it = square.begin(); it != square.end(); ) {
+  for (auto it = damagedSquare.begin(); it != damagedSquare.end(); ) {
     Mine* mine = dynamic_cast<Mine*>(it->get());
     if (mine) {
-      it = square.erase(it);
+      it = damagedSquare.erase(it);
     } else {
       it++;
     }
   }
 
   // direct hit on submarines in this square
-  inflictDamageFrom(player, type, square, 2);
+  inflictDamageFrom(player, sourceSquare, type, damagedSquare, 2);
 
   // indirect hit on submarines in adjacent square
   // and detonate mines in surrounding squares
-  auto coords = getBlastCoordinates(square, 1);
+  auto coords = getBlastCoordinates(damagedSquare, 1);
   for (const Coordinate& coord : coords) {
     Square& adjacentSquare = gameMap.getSquare(coord);
-    inflictDamageFrom(player, type, adjacentSquare, 1);
+    inflictDamageFrom(player, sourceSquare, type, adjacentSquare, 1);
     detonateMines(adjacentSquare);
   }
 }
 
 //-----------------------------------------------------------------------------
 void
-Game::inflictDamageFrom(Player& player, const unsigned type,
-                        Square& square, const unsigned damage)
+Game::inflictDamageFrom(PlayerPtr& player, const Coordinate& sourceSquare,
+                        const unsigned type, Square& damagedSquare,
+                        const unsigned damage)
 {
-  for (ObjectPtr& object : square) {
+  for (ObjectPtr& object : damagedSquare) {
     Submarine* sub = dynamic_cast<Submarine*>(object.get());
     if (sub) {
       sub->takeHits(damage);
@@ -932,14 +943,14 @@ Game::inflictDamageFrom(Player& player, const unsigned type,
           }
         }
       }
-      if (sub->getPlayerID() != player.getPlayerID()) {
-        player.incScore(damage);
+      if (player && (sub->getPlayerID() != player->getPlayerID())) {
+        player->incScore(damage);
         switch (type) {
         case TORPEDO:
-          torpedoHits[player.getPlayerID()][square] += damage;
+          torpedoHits[player->getPlayerID()][sourceSquare] += damage;
           break;
         case MINE:
-          mineHits[player.getPlayerID()][square] += damage;
+          mineHits[player->getPlayerID()][sourceSquare] += damage;
           break;
         }
       }

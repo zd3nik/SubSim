@@ -43,7 +43,6 @@ private: // variables
   Timestamp aborted = 0;
   Timestamp finished = 0;
   unsigned turnNumber = 0;
-  unsigned maxRange = 0;
   unsigned sonarActivations = 0;
   unsigned sprintActivations = 0;
 
@@ -120,8 +119,11 @@ private: // methods
   void executeNuclearDetonations();
   void executeRepairs();
   bool detonateMines(Square&);
-  void detonationFrom(Player&, const unsigned type, Square&);
-  void inflictDamageFrom(Player&, const unsigned type, Square&,
+  void detonationFrom(PlayerPtr&, const Coordinate& sourceSquare,
+                      const unsigned type, Square& damagedSquare);
+
+  void inflictDamageFrom(PlayerPtr&, const Coordinate& sourceSquare,
+                         const unsigned type, Square& damagedSquare,
                          const unsigned damage);
 
   unsigned blastDistance(const Coordinate& from, const Coordinate& to) const;

@@ -87,6 +87,7 @@ private: // methods
   void handlePlayerInput(const int handle);
   void joinGame(const int handle);
   void printGameInfo(Coordinate&);
+  void printMap(Coordinate&);
   void printOptions(Coordinate&);
   void printPlayers(Coordinate&);
   void removePlayer(const int handle, const std::string& msg = "");

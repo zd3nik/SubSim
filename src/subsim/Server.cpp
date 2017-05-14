@@ -104,7 +104,11 @@ Server::run() {
 
     Coordinate coord;
     while (ok && !game.isFinished()) {
-      printGameInfo(coord.set(1, 1));
+      if (game.isStarted()) {
+        printMap(coord.set(1, 1));
+      } else {
+        printGameInfo(coord.set(1, 1));
+      }
       printPlayers(coord);
       printOptions(coord);
       if (waitForInput()) {
@@ -515,9 +519,16 @@ Server::printGameInfo(Coordinate& coord) {
 
 //-----------------------------------------------------------------------------
 void
+Server::printMap(Coordinate& coord) {
+  Screen::print() << coord << ClearToScreenEnd;
+  game.getMap().print(coord);
+}
+
+//-----------------------------------------------------------------------------
+void
 Server::printOptions(Coordinate& coord) {
   Screen::print() << coord << ClearToScreenEnd
-                  << "(Q)uit, (R)edraw, (V)iew Map, Blacklist (A)ddress";
+                  << "(Q)uit, (R)edraw, Blacklist (A)ddress";
 
   if (blackList.size()) {
     Screen::print() << ", (C)lear blacklist";
@@ -527,8 +538,12 @@ Server::printOptions(Coordinate& coord) {
     Screen::print() << coord.south() << "(B)oot Player, Blacklist (P)layer";
   }
 
-  if (game.canStart() && !game.isStarted()) {
-    Screen::print() << coord.south() << "(S)tart Game";
+  if (!game.isStarted()) {
+    if (game.canStart()) {
+      Screen::print() << coord.south() << "(V)iew Map, (S)tart Game";
+    } else {
+      Screen::print() << coord.south() << "(V)iew Map";
+    }
   }
 
   Screen::print() << " -> " << Flush;
@@ -719,10 +734,11 @@ Server::stopListening() {
 //-----------------------------------------------------------------------------
 void
 Server::viewMap() {
-  Coordinate coord(1, 1);
-  clearScreen();
-  game.getMap().print(coord);
-  prompt(coord, "RET=continue");
+  if (!game.isStarted()) {
+    Coordinate coord(1, 1);
+    printMap(coord);
+    prompt(coord, "RET=continue");
+  }
 }
 
 } // namespace subsim

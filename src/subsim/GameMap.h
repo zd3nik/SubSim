@@ -18,7 +18,6 @@ class GameMap : public Rectangle {
 //-----------------------------------------------------------------------------
 private: // variables
   std::vector<UniqueSquare> squares;
-  unsigned maxDistance;
 
 //-----------------------------------------------------------------------------
 public: // constructors
@@ -36,13 +35,19 @@ public: // methods
   void addObject(const Coordinate&, ObjectPtr);
   void removeObject(const Coordinate&, ObjectPtr);
   void moveObject(const Coordinate& from, const Coordinate& to, ObjectPtr);
-  void updateDistances(const unsigned maxDistance);
   bool isBlocked(const Coordinate&) const noexcept;
   Square& getSquare(const Coordinate&) const;
 
+  std::map<Coordinate, unsigned> squaresInRangeOf(
+      const Coordinate& coord,
+      const unsigned range) const;
+
 //-----------------------------------------------------------------------------
 private: // methods
-  void updateDistance(Square& from, const Square& to, const unsigned dist);
+  void addDestinations(std::map<Coordinate, unsigned>& destinations,
+                       const Coordinate& to,
+                       const unsigned dist,
+                       const unsigned range) const;
 };
 
 } // namespace subsim

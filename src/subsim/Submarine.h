@@ -158,8 +158,16 @@ public: // getters
     return sonarCharge;
   }
 
+  unsigned getSonarRange() const noexcept {
+    return sonarCharge ? (sonarCharge + 1) : 0U;
+  }
+
   unsigned getTorpedoCharge() const noexcept {
     return torpedoCharge;
+  }
+
+  unsigned getTorpedoRange() const noexcept {
+    return torpedoCharge ? (torpedoCharge - 1) : 0U;
   }
 
   unsigned getMineCharge() const noexcept {
@@ -168,6 +176,10 @@ public: // getters
 
   unsigned getSprintCharge() const noexcept {
     return sprintCharge;
+  }
+
+  unsigned getSprintRange() const noexcept {
+    return (sprintCharge >= 3) ? ((sprintCharge / 3) + 1) : 0U;
   }
 
   unsigned getTorpedoCount() const noexcept {

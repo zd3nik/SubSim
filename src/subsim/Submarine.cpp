@@ -77,17 +77,6 @@ Submarine::toString() const {
 }
 
 //-----------------------------------------------------------------------------
-unsigned
-Submarine::ping() noexcept {
-  if (sonarCharge) {
-    const unsigned range = (sonarCharge + 1);
-    sonarCharge = 0;
-    return range;
-  }
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
 bool
 Submarine::charge(const Equipment equip) noexcept {
   switch (equip) {
@@ -119,20 +108,25 @@ Submarine::charge(const Equipment equip) noexcept {
 }
 
 //-----------------------------------------------------------------------------
+unsigned
+Submarine::ping() noexcept {
+  const unsigned range = getSonarRange();
+  sonarCharge = 0;
+  return range;
+}
+
+//-----------------------------------------------------------------------------
 bool
 Submarine::fire(const unsigned distance) noexcept {
-  if (torpedoCharge > distance) {
-    torpedoCharge = 0;
-    return true;
-  }
+  const unsigned range = getTorpedoRange();
   torpedoCharge = 0;
-  return false;
+  return (range && (distance <= range));
 }
 
 //-----------------------------------------------------------------------------
 bool
 Submarine::mine() noexcept {
-  if (mineCharge == maxMineCharge) {
+  if (mineCharge >= maxMineCharge) {
     mineCharge = 0;
     return true;
   }
@@ -143,10 +137,10 @@ Submarine::mine() noexcept {
 //-----------------------------------------------------------------------------
 bool
 Submarine::sprint(const unsigned distance) noexcept {
-  const unsigned chargeDistance = ((sprintCharge / 3) + 1);
+  const unsigned range = getSprintRange();
   sprintCharge = 0;
-  if (chargeDistance >= distance) {
-    takeReactorStrain(chargeDistance);
+  if (distance <= range) {
+    takeReactorStrain(range);
     return true;
   }
   return false;
