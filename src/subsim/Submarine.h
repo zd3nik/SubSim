@@ -33,8 +33,8 @@ private: // variables
   unsigned maxMineCharge = 3;
   unsigned maxSprintCharge = 9;
   unsigned shieldCount = maxShields;
-  unsigned torpedoCount = 9999;
-  unsigned mineCount = 9999;
+  unsigned torpedoCount = ~0U;
+  unsigned mineCount = ~0U;
   unsigned surfaceTurns = 0; // turns remaining until surface maneuver complete
   unsigned reactorDamage = 0;
   unsigned sonarCharge = 0;

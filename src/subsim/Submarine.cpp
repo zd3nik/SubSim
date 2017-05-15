@@ -120,17 +120,26 @@ bool
 Submarine::fire(const unsigned distance) noexcept {
   const unsigned range = getTorpedoRange();
   torpedoCharge = 0;
-  return (range && (distance <= range));
+  if (torpedoCount) {
+    if (torpedoCount ~= ~0U) {
+      torpedoCount--;
+    }
+    return (range && (distance <= range));
+  }
+  return false;
 }
 
 //-----------------------------------------------------------------------------
 bool
 Submarine::mine() noexcept {
-  if (mineCharge >= maxMineCharge) {
-    mineCharge = 0;
-    return true;
-  }
+  const unsigned charge = minCharge;
   mineCharge = 0;
+  if (mineCount) {
+    if (mineCount != ~0U) {
+      mineCount--;
+    }
+    return (charge >= maxMineCharge);
+  }
   return false;
 }
 

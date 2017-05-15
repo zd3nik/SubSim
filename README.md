@@ -3,7 +3,7 @@ Submarine Battle Simulator
 
 This is a multi-player submarine battle simulator that supports 2 or more players per game.
 
-Each player has one or more submarines that begin at a position of their choice on the game map.  The game map consists of multiple squares arranged in a grid of rows and columns.  All squares of the game map begin empty or containing a permanent obstacle.  During the game empty squares may become occupied by one or more mobile objects - such as submarines.  But squares containing permanent obstacles cannot become occupied by mobile objects.
+Each player has one or more submarines that begin at a position of their choice on the game map.  The game map consists of multiple squares arranged in a grid of rows and columns.  All squares of the game map begin empty or containing a permanent obstacle.  During the game empty squares may become occupied by one or more mobile objects - such as submarines.  But squares containing obstacles cannot become occupied by mobile objects.
 
 Game Objective
 --------------
@@ -17,13 +17,41 @@ A game ends when only one player has any remaining submarines or the maximum tur
 Game Configuration
 ------------------
 
-Every game is configured with a title, a map of a fixed size, and a list of game settings.  The title, map size, and the number of customized game settings are sent to each player as a single message when they connect to the game server.  If the number of customized game settings is greater than zero then that number of game setting messages will be sent immediately after the first message.
+Every game is configured with a title, a map of a fixed size, and a list of customized game settings.  The title, map size, and the number of customized game settings are sent to each player as a single message when they connect to the game server.  If the number of customized game settings is greater than zero then that number of game setting messages will be sent immediately after the first message.
 
-When a game is created the game server first waits for players to join.  Each player that joins is provided the game configuration (as described above) and in return they each provide their player name and submarine starting positions.  **NOTE:** Games may be configured so that submarine starting positions are pre-set, in which case the players do not provide their own starting positions.
+When a game is created the game server first waits for players to join.  Each player that joins is provided the game configuration (as described above) and in return they each provide their player name and submarine starting positions.  **NOTE:** Games may be configured so that submarine starting positions are pre-set, in which case the players only send starting positions for submarines that do not have a pre-set starting position.
 
 See the [Communication Protocol Reference](protocol.md) for complete details about the message structure and message types.
 
 See the [Game Settings Reference](settings.md) for a list of available game settings and their descriptions.
+
+### Default Game Settings
+
+The default game settings are as follows:
+
+ * MinPlayers    = 2
+ * MaxPlayers    = UNLIMITED
+ * MaxTurns      = UNLIMITED
+ * TurnTimeout   = NO LIMIT
+ * MapSize       = 20 x 20
+ * SubsPerPlayer = 1
+ * SubSize       = 100
+ * Obstancles    = NONE
+
+The following can be set differently per submarine.  The default values are:
+
+ * SubStartLocation    = NONE
+ * SubSurfaceTurnCount = 3
+ * SubMaxShields       = 3
+ * SubMaxReactorDamage = 9
+ * SubMaxSonarCharge   = 100
+ * SubMaxTorpedoCharge = 100
+ * SubMaxMineCharge    = 3
+ * SubMaxSprintCharge  = 9
+ * SubTorpedoCount     = UNLIMITED
+ * SubMineCount        = UNLIMITED
+
+These values are assumed if no custom setting messages are provided by the server that override them.
 
 Game Map
 --------
@@ -238,8 +266,8 @@ These results are sent only to the player the information is intended for.
     -----------------------------------------------------------------------------------------------
     Submarine Info       |  There will be one of these messages for each of your submarines.
                          |  It includes the location, shields remaining, nuclear reactor damage,
-                         |  whether the submarine is surfaced for repairs, and whether the
-                         |  submarine has been destroyed.
+                         |  whether the submarine is surfaced for repairs, whether the
+                         |  submarine has been destroyed, and other submarine specific data.
     -----------------------------------------------------------------------------------------------
     Player Score         |  Includes your current score (the total number of damage points you have
                          |  inflicted on enemy submarines throughout the game so far).
@@ -247,7 +275,7 @@ These results are sent only to the player the information is intended for.
 Ineffective, Illegal, and Invalid Commands
 ------------------------------------------
 
-An ineffective command is a legal command that doesn't do anything effective.  All the consequences of issuing an ineffective command take effect.  For example, if you submit a command to fire a torpedo that is not charged or insufficiently charged to reach its destination the torpedo is still fired but it will not detonate, so you just wasted a torpedo (in some game configurations you may have a limited number of torpedos).  The same thing applies to mines; if they are not fully charged you can still deploy them, but they are inert and you've wasted a mine.  You will not be disqualified for ineffective commands, but you will not be able to score points by submitting ineffective commands.
+An ineffective command is a legal command that doesn't do anything.  All the consequences of issuing an ineffective command take effect.  For example, if you submit a command to fire a torpedo that is not charged or insufficiently charged to reach its destination the torpedo is still fired but it will not detonate, so you just wasted a torpedo (in some game configurations you may have a limited number of torpedos).  The same thing applies to mines; if they are not fully charged you can still deploy them, but they are inert and you've wasted a mine.  You will not be disqualified for ineffective commands, but you will not be able to score points by submitting ineffective commands.
 
 An illegal command is one that is recognized and correctly formed but cannot be executed.  Such as attempting to move to an illegal square (a square beyond the edge of the game map or a square that contains a permanent obstacle), attempting to fire a torpedo or deploy a mine to an illegal square, attempting to charge an unknown or un-chargeable equipment item, moving in an unknown direction, etc.  You will be removed from the game and given a score of 0 if you issue any illegal commands.
 

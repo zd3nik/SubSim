@@ -184,7 +184,7 @@ More info:
     Discovered Object    |  O|tn|X|Y|size
     Torpedo Hit          |  T|tn|X|Y|damage
     Mine Hit             |  M|tn|X|Y|damage
-    Submarine Info       |  I|tn|id|X|Y|shield_count|core_damage|surfaced|dead
+    Submarine Info       |  I|tn|id|X|Y|active|var=value|...
     Player Score (Hits)  |  H|tn|score
     Game Finished        |  F|turn_count
     Player Result        |  P|name|score|turn_count|message
@@ -320,10 +320,10 @@ More info:
                       |        3 indirect hits.  Etc..
     ------------------|---------------------------------------------------------------------------
     I|tn|id|X|Y|      |  One of these messages will be sent, at the end of a turn, for each
-      shields|        |  submarine owned by the player the message is sent to.
-      damage|         |
-      surface|        |  Fields:
-      dead            |
+      active|         |  submarine owned by the player the message is sent to.
+      var=val|        |
+      ...             |  Fields:
+                      |
                       |    tn      = The turn number.
                       |    id      = The ID of the submarine.
                       |              Submarine IDs start at 0 (per player).
@@ -331,14 +331,42 @@ More info:
                       |              Column numbers start at 1;
                       |    Y       = The row of the submarine.
                       |              Row numbers start at 1;
-                      |    shields = The number of shields this submarine has remaining.
-                      |    damage  = The amount of reactor core damage this submarine has.
-                      |    surface = Is this submarine currently surfaced?
-                      |              1 = surfaced, 0 = not surfaced
-                      |    dead    = Has this submarine been destroyed?
-                      |              1 = destroyed, 0 = not destroyed
+                      |    active  = Is this submarine active?
+                      |              1 = active, 0 = not active
+                      |    var=val = An individual submarine variable and its value.
+                      |              There will be one of these for each submarine variable.
+                      |              Order of variables is not guaranteed.
+                      |              Assume a value of 0 for any variable not present.
+                      |              Legal submarine variables are:
                       |
-                      |  NOTE: Do not submit commands for surfaced or dead submarines
+                      |              Variable Name   |  Value Description
+                      |              ----------------|------------------------------------------
+                      |              shields         |  Number of shields remaining.
+                      |              ----------------|------------------------------------------
+                      |              torpedos        |  Number of torpedos remaining.
+                      |                              |  This variable will not be present if
+                      |                              |  the submarine has unlimited torpedos.
+                      |              ----------------|------------------------------------------
+                      |              mines           |  Number of mines remaining.
+                      |              ----------------|------------------------------------------
+                      |              sonar_range     |  Current sonar range.
+                      |              ----------------|------------------------------------------
+                      |              sprint_range    |  Current sprint range.
+                      |              ----------------|------------------------------------------
+                      |              torpedo_range   |  Current torpedo range.
+                      |              ----------------|------------------------------------------
+                      |              mine_ready      |  Can this submarine deploy a mine?
+                      |                              |    0 = not ready, 1 = ready
+                      |              ----------------|------------------------------------------
+                      |              surface_remain  |  The number of turns this submarine will
+                      |                              |  remain surfaced.
+                      |              ----------------|------------------------------------------
+                      |              reactor_damage  |  Amount of reactor core damage sustained.
+                      |              ----------------|------------------------------------------
+                      |              dead            |  Has this submarine been destroyed?
+                      |                              |    0 = not dead, 1 = dead
+                      |
+                      |  NOTE: Do not submit commands for inactive (surfaced or dead) submarines!
     ------------------|---------------------------------------------------------------------------
     H|tn|score        |  Sent to each player at the end of each turn to provide the player with
                       |  their current score.
@@ -355,7 +383,7 @@ More info:
                       |
                       |    players = The number of players in the game.
                       |    turns   = The number of turns executed in the game.
-                      |    status  = An english message describing how the game ended.
+                      |    status  = An English message describing how the game ended.
     ------------------|---------------------------------------------------------------------------
     P|name|score      |  For each player that finished the game one of these messages is sent to
                       |  all remaining players at the end of the game.
@@ -455,58 +483,52 @@ The messages above are sent to all players.
 
 The messages below are only sent to player 1.
 
-    Message                |  Details
-    =======================|======================================================================
-    O|1|33|19|20           |  Something with an approximate size of 20 was detected at square
-                           |  33|19 in turn 1.
-    -----------------------|----------------------------------------------------------------------
-    O|1|34|17|100          |  Something with an approximate size of 100 was detected at square
-                           |  34|17 in turn 1.
-    -----------------------|----------------------------------------------------------------------
-    T|1|37|15|1            |  In turn 1 a torpedo fired by player 1 detonated at square 37|15 and
-                           |  inflicted 1 point of damage on an enemy submarine.
-    -----------------------|----------------------------------------------------------------------
-    I|1|0|13|4|3|0|0|0     |  In turn 1 submarine 0 ended up at square 13|4.
-                           |  This sub has 3 shields.
-                           |  This sub has 0 points of reactor core damage.
-                           |  This sub is not surfaced and not dead.
-    -----------------------|----------------------------------------------------------------------
-    I|1|1|39|10|3|0|0|0    |  In turn 1 submarine 1 ended up at square 39|10.
-                           |  This sub has 3 shields.
-                           |  This sub has 0 points of reactor core damage.
-                           |  This sub is not surfaced and not dead.
-    -----------------------|----------------------------------------------------------------------
-    I|1|2|27|15|2|0|0|0    |  In turn 1 submarine 2 ended up at square 27|15.
-                           |  This sub has 2 shields (took an indirect hit from D|28|16|1).
-                           |  This sub has 0 points of reactor core damage.
-                           |  This sub is not surfaced and not dead.
-    -----------------------|----------------------------------------------------------------------
-    H|1|1                  |  After turn 1 your score is 1
+    Message                  |  Details
+    =========================|====================================================================
+    O|1|33|19|20             |  Something with an approximate size of 20 was detected at square
+                             |  33|19 in turn 1.
+    -------------------------|--------------------------------------------------------------------
+    O|1|34|17|100            |  Something with an approximate size of 100 was detected at square
+                             |  34|17 in turn 1.
+    -------------------------|--------------------------------------------------------------------
+    T|1|37|15|1              |  In turn 1 a torpedo fired by player 1 detonated at square 37|15
+                             |  and inflicted 1 point of damage on an enemy submarine.
+    -------------------------|--------------------------------------------------------------------
+    I|1|0|13|4|1|shields=3|  |  In turn 1 submarine 0 is active and ended up at square 13|4.
+      sonar_range=2          |  This sub has 3 shields and sonar is charged to a range of 2.
+    -------------------------|--------------------------------------------------------------------
+    I|1|1|39|10|1|shields=3  |  In turn 1 submarine 1 is active and ended up at square 39|10.
+                             |  This sub has 3 shields.
+    -------------------------|--------------------------------------------------------------------
+    I|1|2|27|15|1|shields=2  |  In turn 1 submarine 2 ended up at square 27|15.
+                             |  This sub has 2 shields (took an indirect hit from D|28|16|1).
+    -------------------------|--------------------------------------------------------------------
+    H|1|1                    |  After turn 1 your score is 1
 
 To reiterate, a single turn within the game is started when the server sends a `B` (begin turn) message to all players.  Then all players must submit one command for every active submarine they own.  Then the server sends the appropriate turn result messages to each player.  The above example message sequence (which only shows messages from player 1 perspective) would look like this (note the new-line `\n` character at the end of each message):
 
-    Server Message           |  Client Message
-    =========================|=================
-    B|1\n                    |
-                             |  M|1|0|E|Sonar\n
-                             |  P|1|1\n
-                             |  F|1|2|31|15\n
-    S|1|3\n                  |
-    D|1|31|15|1\n            |
-    D|1|28|16|1\n            |
-    O|1|33|19|20\n           |
-    O|1|34|17|100\n          |
-    T|1|37|15|1\n            |
-    I|1|0|13|4|3|0|0|0\n     |
-    I|1|1|39|10|3|0|0|0\n    |
-    I|1|2|27|15|2|0|0|0\n    |
-    H|1|1                    |
+    Server Message                          |  Client Message
+    ========================================|=================
+    B|1\n                                   |
+                                            |  M|1|0|E|Sonar\n
+                                            |  P|1|1\n
+                                            |  F|1|2|31|15\n
+    S|1|3\n                                 |
+    D|1|31|15|1\n                           |
+    D|1|28|16|1\n                           |
+    O|1|33|19|20\n                          |
+    O|1|34|17|100\n                         |
+    T|1|37|15|1\n                           |
+    I|1|0|13|4|1|shields=3|sonar_range=2\n  |
+    I|1|1|39|10|1|shields=3\n               |
+    I|1|2|27|15|1|shields=2\n               |
+    H|1|1                                   |
 
-NOTE: The turn number must be the same in all message sent during a single turn.  In this example the turn number is 1.  If it was turn number 2, then all messages would have 2 as the turn number.
+NOTE: The turn number must be the same in all messages sent during a single turn.  In this example the turn number is 1.  If it was turn number 2, then all messages would have 2 as the turn number.
 
-After all turn results messages have been sent out the server will either start a new turn (send out a new `B` message) or send out an `F` (game finished) message.
+After all turn result messages have been sent out the server will either start a new turn (send out a new `B` message) or send out an `F` (game finished) message.
 
-NOTE: Turn result messages are not quaranteed to arrive in any particular order.  So do not assume that the arrival of the `H` message means there will be no more turn info message.  Only the arrival of a `B` (begin turn) or `F` (game finished) message indicates that all turn result messages have been sent.
+NOTE: Turn result messages are not guaranteed to arrive in any particular order.  So do not assume that the arrival of the `H` message means there will be no more turn info message.  Only the arrival of a `B` (begin turn) or `F` (game finished) message indicates that all turn result messages have been sent.
 
 ### Game Finished
 
