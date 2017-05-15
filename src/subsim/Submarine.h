@@ -110,6 +110,10 @@ public: // setters
 
 //-----------------------------------------------------------------------------
 public: // getters
+  bool isActive() const noexcept {
+    return !(dead | surfaceTurns);
+  }
+
   bool isDead() const noexcept {
     return dead;
   }
@@ -118,7 +122,7 @@ public: // getters
     return detonated;
   }
 
-  bool isSurfaced() const noexcept {
+  bool getSurfaceTurns() const noexcept {
     return surfaceTurns;
   }
 

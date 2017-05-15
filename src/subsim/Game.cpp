@@ -49,10 +49,10 @@ Game::addCommand(const int handle, Input& input, std::string& err) {
   if (input.getFieldCount() < 3) {
     err = "Command messages must begin with turn number and sub ID";
     return false;
-  }
 
   const unsigned tn = input.getUInt(1, ~0U);
   if (tn != turnNumber) {
+  }
     err = ("Invalid turn number: " + input.getStr(1));
     return false;
   }
@@ -76,9 +76,12 @@ Game::addCommand(const int handle, Input& input, std::string& err) {
   if (sub.isDead()) {
     err = ("Command submitted for dead sub ID" + toStr(subID));
     return false;
-  } else if (sub.isSurfaced()) {
+  } else if (sub.getSurfaceTurns()) {
     err = ("Command submitted for surfaced sub ID " + toStr(subID));
     return false;
+  } else if (!sub.isActive()) {
+      err = ("Command submitted for inactive sub ID " + toStr(subID));
+      return false;
   }
 
   try {
@@ -435,7 +438,7 @@ Game::allCommandsReceived() const noexcept {
     }
     for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
       const Submarine& sub = player->getSubmarine(subID);
-      if (!sub.isDead() && !sub.isSurfaced()) {
+      if (sub.isActive()) {
         ids[player->getPlayerID()].insert(subID);
       }
     }
@@ -548,11 +551,40 @@ bool
 Game::sendSubInfo(Player& player) {
   for (unsigned subID = 0; subID < player.getSubmarineCount(); ++subID) {
     const Submarine& sub = player.getSubmarine(subID);
-    if (!sendTo(player, Msg('I') << turnNumber << subID << sub.getLocation()
-                << sub.getShieldCount() << sub.getReactorDamage()
-                << (sub.isSurfaced() ? 1 : 0)
-                << (sub.isDead() ? 1 : 0)))
-    {
+    Msg msg('I');
+    msg << turnNumber << subID << sub.getLocation()
+        << (sub.isActive() ? '1' : '0');
+    if (sub.getShieldCount()) {
+        msg << "shileds=" << sub.getShieldCount();
+    }
+    if (sub.getTorpedoCount() != ~0U) {
+        msg << "torpedos=" << sub.getTorpedoCount();
+    }
+    if (sub.getMineCount() != ~0U) {
+        msg << "mines=" << sub.getMineCount();
+    }
+    if (sub.getSonarRange()) {
+        msg << "sonar_range=" << sub.getSonarRange();
+    }
+    if (sub.getSprintRange()) {
+        msg << "sprint_range=" << sub.getSprintRange();
+    }
+    if (sub.getTorpedoRange()) {
+        msg << "torpedo_range=" << sub.getTorpedoRange();
+    }
+    if (sub.getMineCharge() >= sub.getMaxMineCharge()) {
+        msg << "mine_ready=1";
+    }
+    if (sub.getSurfaceTurns()) {
+        msg << "surface_remain=" << sub.getSurfaceTurns();
+    }
+    if (sub.getReactorDamage()) {
+        msg << "reactor_damage=" << sub.getReactorDamage();
+    }
+    if (sub.isDead()) {
+        msg << "dead=1";
+    }
+    if (!sendTo(player, msg)) {
       return false;
     }
   }
@@ -649,7 +681,7 @@ Game::exec(const Command::CommandType type) {
 
       if (sub->isDead()) {
         continue;
-      } else if (sub->isSurfaced()) {
+      } else if (!sub->isActive()) {
         throw Error("Game::exec() command queued for surfaced submarine!");
       } else if (sub->hasDetonated()) {
         throw Error("Game::exec() nuclear detonations out of sync!");
@@ -856,10 +888,7 @@ Game::executeRepairs() {
   for (auto it = players.begin(); it != players.end(); ++it) {
     PlayerPtr& player = it->second;
     for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
-      Submarine& sub = player->getSubmarine(subID);
-      if (!sub.isDead() && sub.isSurfaced()) {
-        sub.repair();
-      }
+      player->getSubmarine(subID).repair();
     }
   }
 }

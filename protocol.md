@@ -66,7 +66,7 @@ More info:
                       |            Column numbers start at 1.
                       |    Y     = The row number to place a submarine at.
                       |            Row numbers start at 1.
-                      |  
+                      |
                       |  If the game configuration contains pre-set starting positions for your
                       |  submarines you must not provide any X|Y fields.
                       |
@@ -336,7 +336,6 @@ More info:
                       |    var=val = An individual submarine variable and its value.
                       |              There will be one of these for each submarine variable.
                       |              Order of variables is not guaranteed.
-                      |              Assume a value of 0 for any variable not present.
                       |              Legal submarine variables are:
                       |
                       |              Variable Name   |  Value Description
@@ -344,10 +343,12 @@ More info:
                       |              shields         |  Number of shields remaining.
                       |              ----------------|------------------------------------------
                       |              torpedos        |  Number of torpedos remaining.
-                      |                              |  This variable will not be present if
+                      |                              |  This variable will not be prexsent if
                       |                              |  the submarine has unlimited torpedos.
                       |              ----------------|------------------------------------------
                       |              mines           |  Number of mines remaining.
+                      |                              |  This variable will not be prexsent if
+                      |                              |  the submarine has unlimited mines.
                       |              ----------------|------------------------------------------
                       |              sonar_range     |  Current sonar range.
                       |              ----------------|------------------------------------------
@@ -365,6 +366,10 @@ More info:
                       |              ----------------|------------------------------------------
                       |              dead            |  Has this submarine been destroyed?
                       |                              |    0 = not dead, 1 = dead
+                      |
+                      |              With the exception of torpedos and mines
+                      |              assume a value of 0 for any variable not
+                      |              present.
                       |
                       |  NOTE: Do not submit commands for inactive (surfaced or dead) submarines!
     ------------------|---------------------------------------------------------------------------
@@ -465,7 +470,7 @@ This is what the messages from player 1 would look like (note the inclusion of a
     M|1|0|E|Sonar\n
     P|1|1\n
     F|1|2|31|15\n
- 
+
 That player would then wait for turn result messages.  Here are some examples:
 
     Message      |  Details
