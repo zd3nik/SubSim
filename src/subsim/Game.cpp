@@ -553,33 +553,32 @@ Game::sendSubInfo(Player& player) {
     const Submarine& sub = player.getSubmarine(subID);
     Msg msg('I');
     msg << turnNumber << subID << sub.getLocation()
-        << (sub.isActive() ? '1' : '0');
-    if (sub.getShieldCount()) {
-        msg << "shileds=" << sub.getShieldCount();
-    }
+        << (sub.isActive() ? '1' : '0')
+        << ("shields=" + toStr(sub.getShieldCount()));
+
     if (sub.getTorpedoCount() != ~0U) {
-        msg << "torpedos=" << sub.getTorpedoCount();
+        msg << ("torpedos=" + toStr(sub.getTorpedoCount()));
     }
     if (sub.getMineCount() != ~0U) {
-        msg << "mines=" << sub.getMineCount();
+        msg << ("mines=" + toStr(sub.getMineCount()));
     }
     if (sub.getSonarRange()) {
-        msg << "sonar_range=" << sub.getSonarRange();
+        msg << ("sonar_range=" + toStr(sub.getSonarRange()));
     }
     if (sub.getSprintRange()) {
-        msg << "sprint_range=" << sub.getSprintRange();
+        msg << ("sprint_range=" + toStr(sub.getSprintRange()));
     }
     if (sub.getTorpedoRange()) {
-        msg << "torpedo_range=" << sub.getTorpedoRange();
+        msg << ("torpedo_range=" + toStr(sub.getTorpedoRange()));
     }
     if (sub.getMineCharge() >= sub.getMaxMineCharge()) {
         msg << "mine_ready=1";
     }
     if (sub.getSurfaceTurns()) {
-        msg << "surface_remain=" << sub.getSurfaceTurns();
+        msg << ("surface_remain=" + toStr(sub.getSurfaceTurns()));
     }
     if (sub.getReactorDamage()) {
-        msg << "reactor_damage=" << sub.getReactorDamage();
+        msg << ("reactor_damage=" + toStr(sub.getReactorDamage()));
     }
     if (sub.isDead()) {
         msg << "dead=1";
@@ -637,6 +636,8 @@ Game::executeTurn() {
     sendToAll(Msg('D') << turnNumber << pair.first << pair.second);
   }
 
+  PlayerPtr lastPlayer;
+  unsigned alive = 0;
   for (auto it = players.begin(); it != players.end(); ) {
     PlayerPtr& player = it->second;
     if (!player) {
@@ -656,13 +657,23 @@ Game::executeTurn() {
       }
       it = players.erase(it);
     } else {
+      for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
+        SubmarinePtr sub = player->getSubmarinePtr(subID);
+        if (!sub->isDead()) {
+          lastPlayer = player;
+          alive++;
+        }
+      }
       it++;
     }
   }
 
-  if ((players.size() < 2) ||
+  if ((alive < 2) || (players.size() < 2) ||
       (config.getMaxTurns() && (turnNumber >= config.getMaxTurns())))
   {
+    if (lastPlayer) {
+      lastPlayer->incScore(1); // bonus for being last one alive
+    }
     finish();
   } else {
     sendToAll(Msg('B') << ++turnNumber);

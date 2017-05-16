@@ -39,7 +39,7 @@ public: // constructors
       throw Error("Sleep command requires 4 values");
     }
     equip1 = Submarine::getEquipment(input.getStr(3));
-    equip2 = Submarine::getEquipment(input.getStr(3));
+    equip2 = Submarine::getEquipment(input.getStr(4));
   }
 
 //-----------------------------------------------------------------------------

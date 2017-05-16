@@ -186,8 +186,8 @@ More info:
     Mine Hit             |  M|tn|X|Y|damage
     Submarine Info       |  I|tn|id|X|Y|active|var=value|...
     Player Score (Hits)  |  H|tn|score
-    Game Finished        |  F|turn_count
-    Player Result        |  P|name|score|turn_count|message
+    Game Finished        |  F|player_count|turn_count|status
+    Player Result        |  P|name|score
 
 More info:
 

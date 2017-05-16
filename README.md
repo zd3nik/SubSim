@@ -8,18 +8,20 @@ Each player has one or more submarines that begin at a position of their choice 
 Game Objective
 --------------
 
-The goal of this game is to score hits on enemy submarines.  Every submarine begins with some number of shields.  One hit point destroys one shield.  Any hit points a submarine takes after all of its shields have been destroyed will destroy the submarine.  For example, if a submarine has 3 shields, it takes 3 hit points to destroy the shields and one more hit point to destroy the submarine.  In short, it requires 4 hits to destroy a submarine with 3 shields.
+The objective of this game is to score the most points.  A destroyed submarine cannot score hits on enemy submarines.  So by necessity, keeping your submarines alive is also a game objective.
 
-A destroyed submarine cannot score hits on enemy submarines.  So by necessity, keeping your submarines alive is also a game objective.
+Points are awarded when you inflict damage on enemy submarines with torpedos and mines.  Direct hits are worth 2 points, indirect hits are worth 1 point.
 
-A game ends when only one player has any remaining submarines or the maximum turn count has been met.  The player that scored the most hits on enemy submarines wins.  The player with the second most hits is the runner up, etc.
+A game ends when only one player has any remaining submarines or the maximum turn count has been met.  Being the only player with any remaining submarines at the end of a game is worth an extra point - more incentive to keep your submarines alive (e.g. to avoid kamikaze attacks).
+
+Every submarine begins with some number of shields.  One hit point destroys one shield.  Any hit points a submarine takes after all of its shields have been destroyed will destroy the submarine.  For example, if a submarine has 3 shields, it requires 3 hit points to destroy those shields and one more hit point to destroy the submarine.  So it requires 4 hits to destroy a submarine with 3 shields.
 
 Game Configuration
 ------------------
 
-Every game is configured with a title, a map of a fixed size, and a list of customized game settings.  The title, map size, and the number of customized game settings are sent to each player as a single message when they connect to the game server.  If the number of customized game settings is greater than zero then that number of game setting messages will be sent immediately after the first message.
+Every game is configured with a title, a map of a fixed size, and a list of customized game settings.  A message with the server version, game title, map size, and the number of customized game settings is sent to each player when they connect to the game server.  If the number of customized game settings is greater than zero an additional message will be sent for each customized setting immediately after the first message.
 
-When a game is created the game server first waits for players to join.  Each player that joins is provided the game configuration (as described above) and in return they each provide their player name and submarine starting positions.  **NOTE:** Games may be configured so that submarine starting positions are pre-set, in which case the players only send starting positions for submarines that do not have a pre-set starting position.
+When a game is created the game server first waits for players to join.  When a player connects they are provided the game configuration as described above.  To join the game they must provide their player name and submarine starting positions.  **NOTE:** Games may be configured so that submarine starting positions are pre-set, in which case the players only send starting positions for submarines that do not have a pre-set starting position.
 
 See the [Communication Protocol Reference](protocol.md) for complete details about the message structure and message types.
 
@@ -195,7 +197,7 @@ If you do not charge or activate equipment in a turn, or you try to charge equip
 
 NOTE: Damage inflicted on enemy submarines via nuclear detonation is *not* added to your score.  There may be strategic reasons to use nuclear detonation, but as a game mechanic it is primarily intended to discourage inactivity.  If you do not make use of your submarine, or use it very ineffectively (such as overcharging a single equipment item), it will eventually self destruct.
 
-Nuclear detonations have a blast radius of 2.  Any objects within a blast radius of 1 from a nuclear detonation suffer the same damage as a direct hit from a torpedo or mine.  Any objects within a blast radius of 2 from a nuclear detonation suffer the same damage as an indirect hit from a torpedo or mine.  
+Nuclear detonations have a blast radius of 2.  Any objects within a blast radius of 1 from a nuclear detonation suffer the same damage as a direct hit from a torpedo or mine.  Any objects within a blast radius of 2 from a nuclear detonation suffer the same damage as an indirect hit from a torpedo or mine.
 
 The default amount of damage a nuclear reactor can take is 9 points.  This can be customized in the game configuration.
 
