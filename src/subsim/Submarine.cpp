@@ -84,22 +84,22 @@ Submarine::charge(const Equipment equip) noexcept {
     takeReactorDamage(1);
     return true;
   case Sonar:
-    if (++sonarCharge >= maxSonarCharge) {
+    if (++sonarCharge > maxSonarCharge) {
       takeReactorDamage(1);
     }
     return true;
   case Torpedo:
-    if (++torpedoCharge >= maxTorpedoCharge) {
+    if (++torpedoCharge > maxTorpedoCharge) {
       takeReactorDamage(1);
     }
     return true;
   case Mine:
-    if (++mineCharge >= maxMineCharge) {
+    if (++mineCharge > maxMineCharge) {
       takeReactorDamage(1);
     }
     return true;
   case Sprint:
-    if (++sprintCharge >= maxSprintCharge) {
+    if (++sprintCharge > maxSprintCharge) {
       takeReactorDamage(1);
     }
     return true;

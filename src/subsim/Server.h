@@ -11,6 +11,7 @@
 #include "GameConfig.h"
 #include "Game.h"
 #include "Player.h"
+#include <fstream>
 
 namespace subsim
 {
@@ -30,6 +31,7 @@ private: // variables
   Game game;
   Input input;
   Socket socket;
+  std::ofstream gameLog;
   std::set<std::string> blackList;
   std::map<int, PlayerPtr> stagedPlayers;
 

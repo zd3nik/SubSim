@@ -222,7 +222,7 @@ Game::finish() noexcept {
 
 //-----------------------------------------------------------------------------
 std::map<unsigned, std::string>
-Game::start() {
+Game::start(std::ostream& gameLog) {
   config.validate();
   if (started) {
     throw Error("Game is already started");
@@ -236,8 +236,7 @@ Game::start() {
   turnNumber = 1;
   errs.clear();
 
-  sendToAll(Msg('B') << turnNumber);
-
+  sendToAll(gameLog, Msg('B') << turnNumber);
   return errs;
 }
 
@@ -486,19 +485,27 @@ Game::allCommandsReceived() const noexcept {
 
 //-----------------------------------------------------------------------------
 void
-Game::sendToAll(const std::string& message) {
+Game::sendToAll(std::ostream& gameLog, const std::string& message) {
+  gameLog << "SERVER ALL: " << message << std::endl;
   for (auto it = players.begin(); it != players.end(); ++it) {
     PlayerPtr& player = it->second;
     if (player) {
-      sendTo((*player), message);
+      sendTo(nullptr, (*player), message);
     }
   }
 }
 
 //-----------------------------------------------------------------------------
 bool
-Game::sendTo(Player& player, const std::string& message) {
+Game::sendTo(std::ostream* gameLog,
+             Player& player,
+             const std::string& message)
+{
   if (player.send(message)) {
+    if (gameLog) {
+      (*gameLog) << "SERVER " << player.getName() << ": " << message
+                 << std::endl;
+    }
     return true;
   }
   if (!errs.count(player.getPlayerID())) {
@@ -509,11 +516,12 @@ Game::sendTo(Player& player, const std::string& message) {
 
 //-----------------------------------------------------------------------------
 bool
-Game::sendDiscoveredObjects(Player& player) {
+Game::sendDiscoveredObjects(std::ostream& gameLog, Player& player) {
   for (auto pair : discovered[player.getPlayerID()]) {
     const Coordinate coord(pair.first);
     const unsigned size = pair.second;
-    if (!sendTo(player, Msg('O') << turnNumber << coord << size)) {
+    const std::string message = Msg('O') << turnNumber << coord << size;
+    if (!sendTo((&gameLog), player, message)) {
       return false;
     }
   }
@@ -522,11 +530,13 @@ Game::sendDiscoveredObjects(Player& player) {
 
 //-----------------------------------------------------------------------------
 bool
-Game::sendTorpedoHits(Player& player) {
+Game::sendTorpedoHits(std::ostream& gameLog, Player& player) {
   for (auto pair : torpedoHits[player.getPlayerID()]) {
     const Coordinate coord(pair.first);
     const unsigned damage = pair.second;
-    if (!sendTo(player, Msg('T') << turnNumber << coord << damage)) {
+    if (!sendTo((&gameLog), player,
+                Msg('T') << turnNumber << coord << damage))
+    {
       return false;
     }
   }
@@ -535,11 +545,13 @@ Game::sendTorpedoHits(Player& player) {
 
 //-----------------------------------------------------------------------------
 bool
-Game::sendMineHits(Player& player) {
+Game::sendMineHits(std::ostream& gameLog, Player& player) {
   for (auto pair : mineHits[player.getPlayerID()]) {
     const Coordinate coord(pair.first);
     const unsigned damage = pair.second;
-    if (!sendTo(player, Msg('M') << turnNumber << coord << damage)) {
+    if (!sendTo((&gameLog), player,
+                Msg('M') << turnNumber << coord << damage))
+    {
       return false;
     }
   }
@@ -548,7 +560,7 @@ Game::sendMineHits(Player& player) {
 
 //-----------------------------------------------------------------------------
 bool
-Game::sendSubInfo(Player& player) {
+Game::sendSubInfo(std::ostream& gameLog, Player& player) {
   for (unsigned subID = 0; subID < player.getSubmarineCount(); ++subID) {
     const Submarine& sub = player.getSubmarine(subID);
     Msg msg('I');
@@ -583,7 +595,7 @@ Game::sendSubInfo(Player& player) {
     if (sub.isDead()) {
         msg << "dead=1";
     }
-    if (!sendTo(player, msg)) {
+    if (!sendTo((&gameLog), player, msg)) {
       return false;
     }
   }
@@ -592,13 +604,14 @@ Game::sendSubInfo(Player& player) {
 
 //-----------------------------------------------------------------------------
 bool
-Game::sendScore(Player& player) {
-  return sendTo(player, Msg('H') << turnNumber << player.getScore());
+Game::sendScore(std::ostream& gameLog, Player& player) {
+  return sendTo((&gameLog), player,
+                Msg('H') << turnNumber << player.getScore());
 }
 
 //-----------------------------------------------------------------------------
 std::map<unsigned, std::string>
-Game::executeTurn() {
+Game::executeTurn(std::ostream& gameLog) {
   if (!started) {
     throw Error("Game::executeTurn() game has not been started");
   } else if (!turnNumber) {
@@ -614,26 +627,26 @@ Game::executeTurn() {
   mineHits.clear();
   errs.clear();
 
-  exec(Command::Sleep);
-  exec(Command::Move);
-  exec(Command::Sprint);
-  exec(Command::DeployMine);
-  exec(Command::FireTorpedo);
+  exec(gameLog, Command::Sleep);
+  exec(gameLog, Command::Move);
+  exec(gameLog, Command::Sprint);
+  exec(gameLog, Command::DeployMine);
+  exec(gameLog, Command::FireTorpedo);
   executeNuclearDetonations();
-  exec(Command::Surface);
+  exec(gameLog, Command::Surface);
   executeRepairs();
-  exec(Command::Ping);
+  exec(gameLog, Command::Ping);
 
   commands.clear();
 
   if (sonarActivations) {
-    sendToAll(Msg('S') << turnNumber << sonarActivations);
+    sendToAll(gameLog, Msg('S') << turnNumber << sonarActivations);
   }
   if (sprintActivations) {
-    sendToAll(Msg('R') << turnNumber << sprintActivations);
+    sendToAll(gameLog, Msg('R') << turnNumber << sprintActivations);
   }
   for (auto pair : detonations) {
-    sendToAll(Msg('D') << turnNumber << pair.first << pair.second);
+    sendToAll(gameLog, Msg('D') << turnNumber << pair.first << pair.second);
   }
 
   PlayerPtr lastPlayer;
@@ -643,11 +656,11 @@ Game::executeTurn() {
     if (!player) {
       throw Error("Null player in game.players map");
     }
-    if (!sendDiscoveredObjects(*player) ||
-        !sendTorpedoHits(*player) ||
-        !sendMineHits(*player) ||
-        !sendSubInfo(*player) ||
-        !sendScore(*player))
+    if (!sendDiscoveredObjects(gameLog, (*player)) ||
+        !sendTorpedoHits(gameLog, (*player)) ||
+        !sendMineHits(gameLog, (*player)) ||
+        !sendSubInfo(gameLog, (*player)) ||
+        !sendScore(gameLog, (*player)))
     {
       for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
         SubmarinePtr sub = player->getSubmarinePtr(subID);
@@ -676,15 +689,14 @@ Game::executeTurn() {
     }
     finish();
   } else {
-    sendToAll(Msg('B') << ++turnNumber);
+    sendToAll(gameLog, Msg('B') << ++turnNumber);
   }
 
   return errs;
 }
 
 //-----------------------------------------------------------------------------
-void
-Game::exec(const Command::CommandType type) {
+void Game::exec(std::ostream& gameLog, const Command::CommandType type) {
   for (const UniqueCommand& command : commands) {
     if (command->getType() == type) {
       PlayerPtr player = getPlayer(static_cast<int>(command->getPlayerID()));
@@ -698,30 +710,36 @@ Game::exec(const Command::CommandType type) {
         throw Error("Game::exec() nuclear detonations out of sync!");
       }
 
+      bool ok = false;
       switch (type) {
       case Command::Invalid:
         throw Error("Invalid command in command queue");
       case Command::Sleep:
-        exec(sub, static_cast<const SleepCommand&>(*command));
+        ok = exec(sub, static_cast<const SleepCommand&>(*command));
         break;
       case Command::Move:
-        exec(sub, static_cast<const MoveCommand&>(*command));
+        ok = exec(sub, static_cast<const MoveCommand&>(*command));
         break;
       case Command::Sprint:
-        exec(sub, static_cast<const SprintCommand&>(*command));
+        ok = exec(sub, static_cast<const SprintCommand&>(*command));
         break;
       case Command::DeployMine:
-        exec(sub, static_cast<const MineCommand&>(*command));
+        ok = exec(sub, static_cast<const MineCommand&>(*command));
         break;
       case Command::FireTorpedo:
-        exec(sub, static_cast<const FireCommand&>(*command));
+        ok = exec(sub, static_cast<const FireCommand&>(*command));
         break;
       case Command::Surface:
-        exec(sub, static_cast<const SurfaceCommand&>(*command));
+        ok = exec(sub, static_cast<const SurfaceCommand&>(*command));
         break;
       case Command::Ping:
-        exec(sub, static_cast<const PingCommand&>(*command));
+        ok = exec(sub, static_cast<const PingCommand&>(*command));
         break;
+      }
+
+      if (ok) {
+        gameLog << "PLAYER " << player->getName() << ": "
+                << command->toString() << std::endl;
       }
 
       if (sub->hasDetonated()) {
@@ -732,15 +750,17 @@ Game::exec(const Command::CommandType type) {
 }
 
 //-----------------------------------------------------------------------------
-void
+bool
 Game::exec(SubmarinePtr& sub, const SleepCommand& command) {
-  if (!sub->charge(command.getEquip1()) || !sub->charge(command.getEquip2())) {
-    errs[sub->getPlayerID()] = "Illegal sleep command";
+  if (sub->charge(command.getEquip1()) && sub->charge(command.getEquip2())) {
+    return true;
   }
+  errs[sub->getPlayerID()] = "Illegal sleep command";
+  return false;
 }
 
 //-----------------------------------------------------------------------------
-void
+bool
 Game::exec(SubmarinePtr& sub, const MoveCommand& command) {
   const Coordinate from = sub->getLocation();
   const Coordinate to = (from + command.getDirection());
@@ -750,13 +770,15 @@ Game::exec(SubmarinePtr& sub, const MoveCommand& command) {
   {
     gameMap.moveObject(from, to, sub);
     detonateMines(gameMap.getSquare(to));
-  } else {
-    errs[sub->getPlayerID()] = "Illegal move command";
+    return true;
   }
+
+  errs[sub->getPlayerID()] = "Illegal move command";
+  return false;
 }
 
 //-----------------------------------------------------------------------------
-void
+bool
 Game::exec(SubmarinePtr& sub, const SprintCommand& command) {
   const Coordinate from = sub->getLocation();
   Coordinate to(from + command.getDirection());
@@ -773,17 +795,19 @@ Game::exec(SubmarinePtr& sub, const SprintCommand& command) {
         }
       } else {
         errs[sub->getPlayerID()] = "Illegal sprint command";
-        break;
+        return false;
       }
     }
     if (dist) {
       sprintActivations++;
     }
   }
+
+  return true;
 }
 
 //-----------------------------------------------------------------------------
-void
+bool
 Game::exec(SubmarinePtr& sub, const MineCommand& command) {
   const Coordinate to = (sub->getLocation() + command.getDirection());
   if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
@@ -795,13 +819,15 @@ Game::exec(SubmarinePtr& sub, const MineCommand& command) {
         detonateMines(gameMap.getSquare(to));
       }
     }
-  } else {
-    errs[sub->getPlayerID()] = "Illegal mine command";
+    return true;
   }
+
+  errs[sub->getPlayerID()] = "Illegal mine command";
+  return false;
 }
 
 //-----------------------------------------------------------------------------
-void
+bool
 Game::exec(SubmarinePtr& sub, const FireCommand& command) {
   const Coordinate to = command.getDestination();
   if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
@@ -815,21 +841,26 @@ Game::exec(SubmarinePtr& sub, const FireCommand& command) {
         detonationFrom(player, to, TORPEDO, gameMap.getSquare(to));
       }
     }
-  } else {
-    errs[sub->getPlayerID()] = "Illegal fire command";
+    return true;
   }
+
+  errs[sub->getPlayerID()] = "Illegal fire command";
+  return false;
 }
 
 //-----------------------------------------------------------------------------
-void
+bool
 Game::exec(SubmarinePtr& sub, const SurfaceCommand&) {
-  if (!sub->surface()) {
-    errs[sub->getPlayerID()] = "Illegal surface command";
+  if (sub->surface()) {
+    return true;
   }
+
+  errs[sub->getPlayerID()] = "Illegal surface command";
+  return false;
 }
 
 //-----------------------------------------------------------------------------
-void
+bool
 Game::exec(SubmarinePtr& sub, const PingCommand&) {
   const unsigned range = sub->ping();
   if (range) {
@@ -847,6 +878,7 @@ Game::exec(SubmarinePtr& sub, const PingCommand&) {
       }
     }
   }
+  return true;
 }
 
 //-----------------------------------------------------------------------------

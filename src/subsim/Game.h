@@ -19,6 +19,7 @@
 #include "GameConfig.h"
 #include "GameMap.h"
 #include "Player.h"
+#include <ostream>
 
 namespace subsim
 {
@@ -77,7 +78,9 @@ public: // inline methods
 public: // methods
   bool canStart() const noexcept;
   bool allCommandsReceived() const noexcept;
-  bool addCommand(const int playerHandle, Input&, std::string& err);
+  bool addCommand(const int playerHandle,
+                  Input&,
+                  std::string& err);
 
   PlayerPtr getPlayer(const int playerHandle) const;
   PlayerPtr getPlayer(const std::string playerName) const;
@@ -85,8 +88,8 @@ public: // methods
   std::vector<PlayerPtr> getPlayers() const;
   std::vector<PlayerPtr> playersFromAddress(const std::string address) const;
 
-  std::map<unsigned, std::string> start();
-  std::map<unsigned, std::string> executeTurn();
+  std::map<unsigned, std::string> start(std::ostream& gameLog);
+  std::map<unsigned, std::string> executeTurn(std::ostream& gameLog);
 
   void reset(const GameConfig& gameConfig, const std::string& gameTitle);
   void printSummary(Coordinate&) const;
@@ -99,22 +102,23 @@ public: // methods
 
 //-----------------------------------------------------------------------------
 private: // methods
-  void sendToAll(const std::string& message);
-  bool sendTo(Player&, const std::string& message);
-  bool sendDiscoveredObjects(Player&);
-  bool sendTorpedoHits(Player&);
-  bool sendMineHits(Player&);
-  bool sendSubInfo(Player&);
-  bool sendScore(Player&);
+  void sendToAll(std::ostream& gameLog, const std::string& message);
+  bool sendTo(std::ostream* gameLog, Player&, const std::string& message);
 
-  void exec(const Command::CommandType);
-  void exec(SubmarinePtr&, const SleepCommand&);
-  void exec(SubmarinePtr&, const MoveCommand&);
-  void exec(SubmarinePtr&, const SprintCommand&);
-  void exec(SubmarinePtr&, const MineCommand&);
-  void exec(SubmarinePtr&, const FireCommand&);
-  void exec(SubmarinePtr&, const SurfaceCommand&);
-  void exec(SubmarinePtr&, const PingCommand&);
+  bool sendDiscoveredObjects(std::ostream& gameLog, Player&);
+  bool sendTorpedoHits(std::ostream& gameLog, Player&);
+  bool sendMineHits(std::ostream& gameLog, Player&);
+  bool sendSubInfo(std::ostream& gameLog, Player&);
+  bool sendScore(std::ostream& gameLog, Player&);
+
+  void exec(std::ostream& gameLog, const Command::CommandType);
+  bool exec(SubmarinePtr&, const SleepCommand&);
+  bool exec(SubmarinePtr&, const MoveCommand&);
+  bool exec(SubmarinePtr&, const SprintCommand&);
+  bool exec(SubmarinePtr&, const MineCommand&);
+  bool exec(SubmarinePtr&, const FireCommand&);
+  bool exec(SubmarinePtr&, const SurfaceCommand&);
+  bool exec(SubmarinePtr&, const PingCommand&);
 
   void executeNuclearDetonations();
   void executeRepairs();

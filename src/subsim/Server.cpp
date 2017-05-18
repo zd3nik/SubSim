@@ -83,6 +83,16 @@ Server::init() {
 
   autoStart = args.has({"-a", "--auto-start"});
   repeat    = args.has({"-r", "--repeat"});
+
+  std::string fname = args.getStrAfter({"-g", "--game-log"});
+  if (isEmpty(fname)) {
+    fname = (args.getProgram() + ".gamelog");
+  }
+  gameLog.open(fname, (std::ios_base::out | std::ios_base::app));
+  if (!gameLog) {
+    throw Error(Msg() << "Failed to open '" << fname << "' for output");
+  }
+
   return true;
 }
 
@@ -216,6 +226,8 @@ bool
 Server::isValidPlayerName(const std::string& name) const {
   return ((name.size() > 1) && isalpha(name[0]) &&
       !iEqual(name, "server") &&
+      !iEqual(name, "player") &&
+      !iEqual(name, "new_game") &&
       !iEqual(name, "all") &&
       !iEqual(name, "you") &&
       !iEqual(name, "new") &&
@@ -302,7 +314,23 @@ void
 Server::beginGame() {
   stopListening();
 
-  std::map<unsigned, std::string> errs = game.start();
+  const GameConfig& config = game.getConfig();
+  gameLog << "NEW_GAME: " << config.toMessage(getVersion(), game.getTitle())
+          << std::endl;
+
+  for (const GameSetting& setting : config.getCustomSettings()) {
+    gameLog << "SERVER ALL: " << setting.toMessage() << std::endl;
+  }
+
+  for (const PlayerPtr& player : game.getPlayers()) {
+    gameLog << "SERVER ALL: J|" << player->getName();
+    for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
+      gameLog << '|' << player->getSubmarine(subID).getLocation().toString();
+    }
+    gameLog << std::endl;
+  }
+
+  std::map<unsigned, std::string> errs = game.start(gameLog);
   for (auto it = errs.begin(); it != errs.end(); ++it) {
     removePlayer(static_cast<int>(it->first), it->second);
   }
@@ -418,7 +446,7 @@ Server::handlePlayerInput(const int handle) {
   }
 
   if (game.allCommandsReceived()) {
-    std::map<unsigned, std::string> errs = game.executeTurn();
+    std::map<unsigned, std::string> errs = game.executeTurn(gameLog);
     for (auto it = errs.begin(); it != errs.end(); ++it) {
       removePlayer(static_cast<int>(it->first), it->second);
     }
@@ -664,6 +692,8 @@ Server::sendGameResults() {
       << game.getTurnNumber()
       << (game.isAborted() ? "aborted" : "finished");
 
+  gameLog << "SERVER ALL: " << finishMessage << std::endl;
+
   // get local list of players (in case any drop out while sending)
   std::vector<PlayerPtr> players = game.getPlayers();
 
@@ -671,6 +701,9 @@ Server::sendGameResults() {
   for (auto& recipient : players) {
     if (recipient->isConnected()) {
       send((*recipient), finishMessage);
+      gameLog << "SERVER ALL: " << Msg('P') << recipient->getName()
+              << recipient->getScore() << std::endl;
+
       for (auto& player : players) {
         send((*recipient), Msg('P') << player->getName() << player->getScore());
       }

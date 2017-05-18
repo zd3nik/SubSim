@@ -45,7 +45,9 @@ public: // constructors
 //-----------------------------------------------------------------------------
 public: // Command::Printable implementaion
   std::string toString() const override {
-    return Msg(TYPE) << getTurnNumber() << getSubID();
+    return Msg(TYPE) << getTurnNumber() << getSubID()
+                     << Submarine::equipmentName(equip1)
+                     << Submarine::equipmentName(equip2);
   }
 
 //-----------------------------------------------------------------------------
