@@ -481,11 +481,11 @@ std::string
 GameConfig::toMessage(const Version& serverVersion,
                       const std::string& title) const
 {
-  return CSVWriter('|', true) << serverVersion
-                              << title
-                              << mapWidth
-                              << mapHeight
-                              << customSettings.size();
+  return Msg('C') << serverVersion
+                  << title
+                  << mapWidth
+                  << mapHeight
+                  << customSettings.size();
 }
 
 } // namespace subsim

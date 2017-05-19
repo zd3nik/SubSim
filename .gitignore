@@ -36,6 +36,11 @@ Thumbs.db
 /.qmake.cache
 /.qmake.stash
 grip/
+build*
+
+# intellij
+.idea/
+*.iml
 
 # qtcreator generated files
 *.pro.user*
