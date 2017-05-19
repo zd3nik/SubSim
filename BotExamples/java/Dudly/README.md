@@ -8,7 +8,7 @@ How to compile
 
 Run this command in the BotExamples/java/Dudly directory (the directory that contains this README.md file)
 
-    javac Dudly.java
+    javac -d . src/Dudly.java
 
 How to run with defaults
 ------------------------
