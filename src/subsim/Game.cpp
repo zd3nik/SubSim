@@ -1047,11 +1047,11 @@ Game::blastDistance(const Coordinate& from, const Coordinate& to) const {
 //-----------------------------------------------------------------------------
 std::vector<Coordinate>
 Game::getBlastCoordinates(const Coordinate& src, const unsigned range) const {
-  const unsigned minX = (src.getX() > range) ? (src.getX() - range) : 0;
+  const unsigned minX = (src.getX() > range) ? (src.getX() - range) : 1;
   const unsigned maxX = ((src.getX() + range) < gameMap.getWidth())
       ? (src.getX() + range) : gameMap.getWidth();
 
-  const unsigned minY = (src.getY() > range) ? (src.getY() - range) : 0;
+  const unsigned minY = (src.getY() > range) ? (src.getY() - range) : 1;
   const unsigned maxY = ((src.getY() + range) < gameMap.getHeight())
       ? (src.getY() + range) : gameMap.getHeight();
 

@@ -60,7 +60,6 @@ public class Dudly {
             return;
         }
 
-        random.setSeed(System.currentTimeMillis());
         String usernameArg = getStringArg(args, 0, DEFAULT_USERNAME);
         String serverAddressArg = getStringArg(args, 1, DEFAULT_SERVER_ADDRESS);
         int serverPortArg = getIntArg(args, 2, DEFAULT_SERVER_PORT);
@@ -72,6 +71,7 @@ public class Dudly {
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());
             e.printStackTrace();
+            System.exit(1);
         } finally {
             bot.disconnect();
         }
@@ -406,7 +406,7 @@ public class Dudly {
         }
 
         // pick a random destination square
-        if ((randomDestination == null) || (randomDestination.equals(sub.location)) || (random.nextInt(100) > 80)) {
+        if ((randomDestination == null) || (randomDestination.equals(sub.location))) {
             randomDestination = randomSquare(sub.location);
             if (debugMode) {
                 System.out.println("New destination square = " + randomDestination);
