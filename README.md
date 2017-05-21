@@ -37,12 +37,12 @@ The default game settings are as follows:
  * TurnTimeout   = NO LIMIT
  * MapSize       = 20 x 20
  * SubsPerPlayer = 1
- * SubSize       = 100
  * Obstancles    = NONE
 
 The following can be set differently per submarine.  The default values are:
 
  * SubStartLocation    = NONE
+ * SubSize             = 100
  * SubSurfaceTurnCount = 3
  * SubMaxShields       = 3
  * SubMaxReactorDamage = 9

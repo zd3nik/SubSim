@@ -7,9 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Single source file example of a SubSim bot
@@ -23,20 +21,37 @@ public class Dudly {
     private static final String DEFAULT_SERVER_ADDRESS = "localhost";
     private static final int DEFAULT_SERVER_PORT = 9555;
     private static final Random random = new Random();
+    private static final Direction[] ALL_DIRECTIONS = new Direction[]{
+            Direction.North,
+            Direction.East,
+            Direction.South,
+            Direction.West
+    };
     private String username;
     private String serverAddress;
     private int serverPort;
+    private boolean debugMode = false;
     private Socket socket = null;
     private BufferedReader socketReader = null;
     private PrintWriter socketWriter = null;
-    private List<Coordinate> gameMap = new ArrayList<>();
+    private Map<Coordinate, MapSquare> gameMap = new HashMap<>();
+    private List<DetonationMessage> detonations = new ArrayList<>();
+    private List<TorpedoHitMessage> torpedoHits = new ArrayList<>();
+    private List<MineHitMessage> mineHits = new ArrayList<>();
     private Submarine mySub = new Submarine(0); // only 1 sub supported in this bot
+    private Coordinate randomDestination = null;
+    private int mapWidth = 0;
+    private int mapHeight = 0;
     private int turnNumber = 0;
+    private int maxRange = 0;
+    private int sonarActivations = 0;
+    private int sprintActivations = 0;
 
-    public Dudly(String username, String serverAddress, int serverPort) {
+    private Dudly(String username, String serverAddress, int serverPort) {
         this.username = username;
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
+        this.debugMode = "1".equals(System.getenv("DEBUG"));
     }
 
     public static void main(String[] args) {
@@ -45,6 +60,7 @@ public class Dudly {
             return;
         }
 
+        random.setSeed(System.currentTimeMillis());
         String usernameArg = getStringArg(args, 0, DEFAULT_USERNAME);
         String serverAddressArg = getStringArg(args, 1, DEFAULT_SERVER_ADDRESS);
         int serverPortArg = getIntArg(args, 2, DEFAULT_SERVER_PORT);
@@ -86,25 +102,94 @@ public class Dudly {
         }
     }
 
+    private Coordinate randomSquare() {
+        return randomSquare(null);
+    }
+
+    private Coordinate randomSquare(Coordinate from) {
+        while (true) {
+            int x = (1 + random.nextInt(mapWidth));
+            int y = (1 + random.nextInt(mapHeight));
+            Coordinate location = new Coordinate(x, y);
+            MapSquare square = gameMap.get(location);
+            if ((square != null) && !square.blocked && !location.equals(from)) {
+                return location;
+            }
+        }
+    }
+
     private void login() throws Exception {
         // open socket reader/writer to the game server
         connect();
 
         // immediately after connecting the server sends a game config message
-        String message = receiveMessage();
-        GameConfigMessage configMessage = new GameConfigMessage(message);
-        // TODO configure - this sets mySub location
+        configure(new GameConfigMessage(receiveMessage()));
 
-        // register with the game server by sending a join message: J|username|subX|subY
-        // NOTE: this assumes game configured for 1 sub per player and no pre-set sub location
-        message = String.format("J|%s|%d|%d", username, mySub.getX(), mySub.getY());
-        sendMessage(message);
+        // join the game by sending a "Join Game" message with our username
+        if (mySub.location.isValid()) {
+            // game config from server provided a start location for our submarine
+            // send "Join Game" message without sub start location
+            sendMessage(String.format("J|%s", username));
+        } else {
+            // game config from server didn't provide a start location for our submarine
+            // we must choose a start location and include it in the "Join Game" message
+            mySub.location = randomSquare();
+            sendMessage(String.format("J|%s|%d|%d", username, mySub.getX(), mySub.getY()));
+        }
 
-        // if registration is successful we get a join message back (without the board): J|username
-        // this is the only time we are in challenge/response mode with the server
-        message = receiveMessage();
-        if (!message.equals(String.format("J|%s", username))) {
-            throw new IOException("Failed to join. Server response = " + message);
+        // if join was successful we get a "J|username" message back, otherwise the join failed
+        String response = receiveMessage();
+        if (!String.format("J|%s", username).equals(response)) {
+            throw new IOException("Failed to join. Server response = " + response);
+        }
+    }
+
+    private void configure(GameConfigMessage message) throws Exception {
+        turnNumber = 0;
+        maxRange = 20;
+        mapWidth = message.mapWidth;
+        mapHeight = message.mapHeight;
+        gameMap = new HashMap<>(mapWidth * mapHeight);
+        mySub = new Submarine(0);
+
+        for (int y = 1; y <= mapHeight; ++y) {
+            for (int x = 1; x <= mapWidth; ++x) {
+                MapSquare square = new MapSquare(x, y);
+                gameMap.put(square, square);
+            }
+        }
+
+        System.out.println("Joining as Player  = " + username);
+        System.out.println("Server Host:Port   = " + serverAddress + ":" + serverPort);
+        System.out.println("Server Version     = " + message.serverVersion);
+        System.out.println("Game Title         = " + message.gameTitle);
+        System.out.println("Game Map Size      = " + mapWidth + " x " + mapHeight);
+
+        for (GameSettingMessage setting : message.customSettings) {
+            System.out.println("Customized Setting = " + setting);
+            if ("SubsPerPlayer".equals(setting.name)) {
+                throw new Exception("This bot doesn't support more than 1 sub per player");
+            } else if ("SubStartLocation".equals(setting.name)) {
+                int subId = setting.getIntValue(0);
+                int x = setting.getIntValue(1);
+                int y = setting.getIntValue(2);
+                if (subId != mySub.subId) {
+                    throw new Exception("Unknown subId (" + subId + ") in SubStartLocation message");
+                }
+                mySub.location = new Coordinate(x, y);
+            } else if ("SubSize".equals(setting.name)) {
+                int subId = setting.getIntValue(0);
+                int size = setting.getIntValue(1);
+                if (subId != mySub.subId) {
+                    throw new Exception("Unknown subId (" + subId + ") in SubSize message");
+                }
+                mySub.size = size;
+            } else if ("Obstacle".equals(setting.name)) {
+                int x = setting.getIntValue(0);
+                int y = setting.getIntValue(1);
+                gameMap.get(new Coordinate(x, y)).blocked = true;
+            }
+            // TODO update maxRange if maxTorpedoCharge or maxSonarCharge < maxRange
         }
     }
 
@@ -120,12 +205,12 @@ public class Dudly {
                 handleMessage(new SprintActivationsMessage(message));
             } else if (message.startsWith("D|")) {
                 handleMessage(new DetonationMessage(message));
-            } else if (message.startsWith("O|")) {
-                handleMessage(new DiscoveredObjectMessage(message));
             } else if (message.startsWith("T|")) {
                 handleMessage(new TorpedoHitMessage(message));
             } else if (message.startsWith("M|")) {
                 handleMessage(new MineHitMessage(message));
+            } else if (message.startsWith("O|")) {
+                handleMessage(new DiscoveredObjectMessage(message));
             } else if (message.startsWith("I|")) {
                 handleMessage(new SubmarineInfoMessage(message));
             } else if (message.startsWith("H|")) {
@@ -139,48 +224,254 @@ public class Dudly {
         }
     }
 
-    private void handleMessage(SubmarineInfoMessage message) {
-
+    private void checkTurnNumber(TurnRelatedMessage message) {
+        if (message.turnNumber != turnNumber) {
+            throw new IllegalStateException("turn number out of sync!");
+        }
     }
 
-    private void handleMessage(PlayerScoreMessage message) {
+    private void handleMessage(BeginTurnMessage message) throws Exception {
+        // update turn number
+        turnNumber = message.getIntPart(1);
+        if (debugMode) {
+            System.out.println("Press ENTER to continue turn " + turnNumber);
+            byte[] buf = new byte[1];
+            while (System.in.read(buf) == 1) {
+                if (buf[0] == '\n') {
+                    break;
+                }
+            }
+        }
 
+        // this is where all the A.I. is
+        issueCommand(mySub);
+
+        // clear information - it will be re-populated by turn results messages from the server
+        for (Map.Entry<Coordinate, MapSquare> entry : gameMap.entrySet()) {
+            entry.getValue().reset();
+        }
+
+        detonations.clear();
+        torpedoHits.clear();
+        mineHits.clear();
+        sonarActivations = 0;
+        sprintActivations = 0;
     }
 
-    private void handleMessage(MineHitMessage message) {
-
+    private Map<Coordinate, Integer> squaresInRangeOf(Coordinate from, int range) throws Exception {
+        if (!gameMap.containsKey(from)) {
+            throw new IllegalAccessException("squaresInRangeOf() invalid coordinate: " + from.x + "|" + from.y);
+        }
+        Map<Coordinate, Integer> destinations = new HashMap<>();
+        destinations.put(from, 0);
+        if (range > 0) {
+            // do a breadth-first search to find all squares within range of from square
+            addDestinations(destinations, from, 1, range);
+        }
+        return destinations;
     }
 
-    private void handleMessage(TorpedoHitMessage message) {
+    private void addDestinations(Map<Coordinate, Integer> dests, final Coordinate coord, int distance, int range) {
+        List<Coordinate> next = new ArrayList<>();
+        for (Direction dir : ALL_DIRECTIONS) {
+            Coordinate dest = coord.shifted(dir);
+            if (gameMap.containsKey(dest) && !gameMap.get(dest).blocked) {
+                Integer previousDist = dests.get(dest);
+                if ((previousDist == null) || (distance < previousDist)) {
+                    dests.put(dest, distance);
+                    if (gameMap.get(dest).isEmpty()) {
+                        next.add(dest);
+                    }
+                }
+            }
+        }
 
+        if (distance < range) {
+            for (Coordinate square : next) {
+                addDestinations(dests, square, (distance + 1), range);
+            }
+        }
     }
 
-    private void handleMessage(DiscoveredObjectMessage message) {
-
+    private int getBlastDistance(Coordinate from, Coordinate to) throws Exception {
+        if (!gameMap.containsKey(from) || !gameMap.containsKey(to)) {
+            throw new IllegalAccessException("getBlastDistance() invalid coordinates");
+        }
+        int xDiff = Math.abs(from.x - to.x);
+        int yDiff = Math.abs(from.y - to.y);
+        return Math.max(xDiff, yDiff);
     }
 
-    private void handleMessage(DetonationMessage message) {
+    private Coordinate getTorpedoTarget(Submarine sub) throws Exception {
+        if (sub.torpedoRange < 2) {
+            return null;
+        }
 
+        int largestSize = 1;
+        List<Coordinate> targets = new ArrayList<>();
+        Map<Coordinate, Integer> dests = squaresInRangeOf(sub.location, sub.torpedoRange);
+        for (Map.Entry<Coordinate, Integer> entry : dests.entrySet()) {
+            Coordinate location = entry.getKey();
+            if ((getBlastDistance(sub.location, location) > 1)) {
+                MapSquare square = gameMap.get(location);
+                if ((square.foreignObjectSize >= largestSize) && (square.foreignObjectSize == square.objectSize)) {
+                    targets.add(location);
+                }
+            }
+        }
+
+        if (targets.isEmpty()) {
+            return null;
+        }
+
+        return targets.get(random.nextInt(targets.size()));
     }
 
-    private void handleMessage(SprintActivationsMessage message) {
+    /*
+     * For simplicity this bot uses a very dumb first-square direction guess in this routine.
+     * This can result in the bot getting stuck if the game map has obstacles!
+     * To mitigate this, issueCommand() randomly chooses a different destination square every once in a while.
+     * This method provides an opportunity to do some research on path-finding algorithms.
+     * For example, the squaresInRangeOf routine can be adapted to an A* search relatively easily; look it up! :-)
+     */
+    private Direction getDirectionToward(Coordinate from, Coordinate to) throws Exception {
+        if (from.equals(to) || !gameMap.containsKey(from) || !gameMap.containsKey(to)) {
+            throw new IllegalArgumentException("getDirectionToward() invalid coordinates: " + from + " - " + to);
+        }
 
+        // get intended direction(s) - using very naive approach
+        List<Direction> directions = new ArrayList<>();
+        if (to.x == from.x) {
+            if (to.y < from.y) {
+                directions.add(Direction.North);
+            } else {
+                directions.add(Direction.South);
+            }
+        } else if (to.y == from.y) {
+            if (to.x < from.x) {
+                directions.add(Direction.West);
+            } else {
+                directions.add(Direction.East);
+            }
+        } else {
+            if (to.x < from.x) {
+                directions.add(Direction.West);
+            } else {
+                directions.add(Direction.East);
+            }
+            if (to.y < from.y) {
+                directions.add(Direction.North);
+            } else {
+                directions.add(Direction.South);
+            }
+        }
+
+        // pick randomly from intended directions
+        Collections.shuffle(directions);
+        for (Direction direction : directions) {
+            MapSquare square = gameMap.get(from.shifted(direction));
+            if ((square != null) && !square.blocked) {
+                return direction;
+            }
+        }
+
+        // none of the intended directions can be moved to, pick a random direction instead
+        directions.addAll(Arrays.asList(ALL_DIRECTIONS));
+        Collections.shuffle(directions);
+        for (Direction direction : directions) {
+            MapSquare square = gameMap.get(from.shifted(direction));
+            if ((square != null) && !square.blocked) {
+                return direction;
+            }
+        }
+
+        // it should not be possible to get here!
+        throw new Exception("No legal direction to move from square " + from.x + "|" + from.y);
+    }
+
+    private void issueCommand(Submarine sub) throws Exception {
+        // always shoot at stuff when we can!
+        Coordinate target = getTorpedoTarget(sub);
+        if (target != null) {
+            sendMessage(sub.fireTorpedo(turnNumber, target).toString());
+            randomDestination = null;
+            return;
+        }
+
+        // do sonar ping if torpedo range >= sonar range
+        if ((sub.torpedoRange >= sub.sonarRange) && (sub.sonarRange > (1 + random.nextInt(6)))) {
+            sendMessage(sub.ping(turnNumber).toString());
+            randomDestination = null;
+            return;
+        }
+
+        // pick a random destination square
+        if ((randomDestination == null) || (randomDestination.equals(sub.location)) || (random.nextInt(100) > 80)) {
+            randomDestination = randomSquare(sub.location);
+            if (debugMode) {
+                System.out.println("New destination square = " + randomDestination);
+            }
+        }
+
+        // pick an item to charge
+        Equipment charge = ((sub.torpedoRange >= Math.min(sub.sonarRange, maxRange)) || (random.nextInt(100) < 33))
+                ? Equipment.Sonar
+                : Equipment.Torpedo;
+
+        // move toward randomDestination
+        Direction direction = getDirectionToward(sub.location, randomDestination);
+        sendMessage(sub.move(turnNumber, direction, charge).toString());
     }
 
     private void handleMessage(SonarActivationsMessage message) {
-
+        checkTurnNumber(message);
+        sonarActivations += message.activations;
     }
 
-    private void handleMessage(BeginTurnMessage message) {
+    private void handleMessage(SprintActivationsMessage message) {
+        checkTurnNumber(message);
+        sprintActivations += message.activations;
+    }
 
+    private void handleMessage(DetonationMessage message) {
+        checkTurnNumber(message);
+        detonations.add(message);
+    }
+
+    private void handleMessage(TorpedoHitMessage message) {
+        checkTurnNumber(message);
+        torpedoHits.add(message);
+    }
+
+    private void handleMessage(MineHitMessage message) {
+        checkTurnNumber(message);
+        mineHits.add(message);
+    }
+
+    private void handleMessage(DiscoveredObjectMessage message) {
+        checkTurnNumber(message);
+        MapSquare square = gameMap.get(message.location);
+        if (!square.blocked) {
+            square.objectSize += message.size;
+            square.foreignObjectSize += message.size;
+        }
+    }
+
+    private void handleMessage(SubmarineInfoMessage message) {
+        checkTurnNumber(message);
+        mySub.update(message);
+        gameMap.get(mySub.location).foreignObjectSize -= mySub.size;
+    }
+
+    private void handleMessage(PlayerScoreMessage message) {
+        checkTurnNumber(message);
+        // this bot doesn't do anything with this information
     }
 
     private void handleMessage(GameFinishedMessage message) {
         System.out.println("game finished");
-        // after the game finished message the server will send a player result message for each player in the game
-        for (PlayerResultMessage result : message.getPlayerResults()) {
-            // in this example we just print each player result message to the console
-            System.out.println("  " + result.getPlayerName() + " score = " + result.getPlayerScore());
+        for (PlayerResultMessage result : message.playerResults) {
+            System.out.println("  " + result.playerName + " score = " + result.playerScore);
         }
     }
 
@@ -239,6 +530,9 @@ public class Dudly {
             throw new IllegalArgumentException("cannot send multi-line message to game server");
         }
         if (isConnected()) {
+            if (debugMode) {
+                System.out.println("SEND: " + message);
+            }
             socketWriter.println(message);
             socketWriter.flush();
         } else {
@@ -248,7 +542,11 @@ public class Dudly {
 
     private String receiveMessage() throws Exception {
         if (isConnected()) {
-            return socketReader.readLine();
+            String message = socketReader.readLine();
+            if (debugMode) {
+                System.out.println("RECV: " + message);
+            }
+            return message;
         } else {
             throw new IOException("not connected");
         }
@@ -291,153 +589,129 @@ public class Dudly {
     }
 
     class Coordinate {
-        private int x;
-        private int y;
+        final int x;
+        final int y;
 
         Coordinate(int x, int y) {
             this.x = x;
             this.y = y;
         }
 
-        Coordinate(Coordinate other) {
-            this.x = other.x;
-            this.y = other.y;
+        @Override
+        public String toString() {
+            return (x + "|" + y);
         }
 
-        Coordinate move(Direction direction) {
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            } else if (other instanceof Coordinate) {
+                return (hashCode() == ((Coordinate) other).hashCode());
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return ((100000 * y) + x); // this assumes map width <= 100000 in all cases
+        }
+
+        boolean isValid() {
+            return ((x > 0) && (y > 0));
+        }
+
+        Coordinate shifted(Direction direction) {
             switch (direction) {
                 case North:
-                    --y;
-                    break;
-                case East:
-                    ++x;
-                    break;
+                    return new Coordinate(x, (y - 1));
                 case South:
-                    ++y;
-                    break;
+                    return new Coordinate(x, (y + 1));
+                case East:
+                    return new Coordinate((x + 1), y);
                 case West:
-                    --x;
-                    break;
+                    return new Coordinate((x - 1), y);
             }
             return this;
         }
+    }
 
-        int getX() {
-            return x;
+    class MapSquare extends Coordinate {
+        boolean blocked = false;
+        int objectSize = 0;
+        int foreignObjectSize = 0; // objectSize minus mySub - if mySub not on this square then = objectSize
+
+        MapSquare(int x, int y) {
+            super(x, y);
         }
 
-        int getY() {
-            return y;
+        boolean isEmpty() {
+            return (!blocked && (objectSize == 0));
         }
 
-        boolean isValid(int width, int height) {
-            return ((x > 0) && (x <= width) && (y > 0) && (y <= height));
+        void reset() {
+            // do not reset blocked flag, that never changes
+            objectSize = 0;
+            foreignObjectSize = 0;
         }
     }
 
     class Submarine {
-        private final int subId;
-        private Coordinate location = new Coordinate(0, 0);
-        private boolean active = true;
-        private int shieldCount = 3;
-        private int torpedoCount = -1; // -1 = unlimited
-        private int mineCount = -1;    // -1 = unlimited
-        private int sonarRange = 0;
-        private int sprintRange = 0;
-        private int torpedoRange = 0;
-        private boolean mineReady = false;
-        private int surfaceTurnsRemaining = 0;
-        private int reactorDamage = 0;
-        private boolean dead = false;
+        final int subId;
+        Coordinate location = new Coordinate(0, 0);
+        boolean dead = false;
+        boolean active = true;
+        boolean mineReady = false;
+        int size = 100;
+        int shieldCount = 3;
+        int torpedoCount = -1; // -1 = unlimited
+        int mineCount = -1;    // -1 = unlimited
+        int sonarRange = 0;
+        int sprintRange = 0;
+        int torpedoRange = 0;
+        int reactorDamage = 0;
+        int surfaceTurnsRemaining = 0;
 
         Submarine(int subId) {
             this.subId = subId;
         }
 
-        void update(SubmarineInfoMessage info) throws Exception {
-            if (subId != info.getSubId()) {
-                throw new Exception("Submarine ID doesn't match");
+        void update(SubmarineInfoMessage info) {
+            if (subId != info.subId) {
+                throw new RuntimeException("subId (" + info.subId + ") in sub info message doesn't match mySub id");
             }
-            location = info.getLocation();
-            active = info.isActive();
-            shieldCount = info.getShieldCount();
-            torpedoCount = info.getTorpedoCount();
-            mineCount = info.getMineCount();
-            sonarRange = info.getSonarRange();
-            sprintRange = info.getSprintRange();
-            torpedoRange = info.getTorpedoRange();
-            mineReady = info.isMineReady();
-            surfaceTurnsRemaining = info.getSurfaceTurnsRemaining();
-            reactorDamage = info.getReactorDamage();
-            dead = info.isDead();
-        }
-
-        int getSubId() {
-            return subId;
-        }
-
-        Coordinate getLocation() {
-            return location;
+            location = info.location;
+            dead = info.dead;
+            active = info.active;
+            mineReady = info.mineReady;
+            shieldCount = info.shieldCount;
+            torpedoCount = info.torpedoCount;
+            mineCount = info.mineCount;
+            sonarRange = info.sonarRange;
+            sprintRange = info.sprintRange;
+            torpedoRange = info.torpedoRange;
+            reactorDamage = info.reactorDamage;
+            surfaceTurnsRemaining = info.surfaceTurnsRemaining;
         }
 
         int getX() {
-            return location.getX();
+            return location.x;
         }
 
         int getY() {
-            return location.getY();
+            return location.y;
         }
 
-        int getShieldCount() {
-            return shieldCount;
-        }
-
-        boolean unlimitedTorpedos() {
+        boolean hasUnlimitedTorpedos() {
             return (torpedoCount < 0);
         }
 
-        boolean unlimitedMines() {
+        boolean hasUnlimitedMines() {
             return (mineCount < 0);
-        }
-
-        int getTorpedoCount() {
-            return torpedoCount;
-        }
-
-        int getMineCount() {
-            return mineCount;
-        }
-
-        int getSonarRange() {
-            return sonarRange;
-        }
-
-        int getSprintRange() {
-            return sprintRange;
-        }
-
-        int getTorpedoRange() {
-            return torpedoRange;
-        }
-
-        boolean isMineReady() {
-            return mineReady;
         }
 
         boolean isSurfaced() {
             return (surfaceTurnsRemaining > 0);
-        }
-
-        int getSurfaceTurnsRemaining() {
-            return surfaceTurnsRemaining;
-        }
-
-        int getReactorDamage() {
-            return reactorDamage;
-        }
-
-        boolean isDead() {
-            return dead;
         }
 
         PingCommand ping(int turnNumber) {
@@ -470,20 +744,12 @@ public class Dudly {
     }
 
     class SubmarineCommand {
-        private int turnNumber;
-        private int subId;
+        final int turnNumber;
+        final int subId;
 
         SubmarineCommand(int turnNumber, int subId) {
             this.turnNumber = turnNumber;
             this.subId = subId;
-        }
-
-        int getTurnNumber() {
-            return turnNumber;
-        }
-
-        int getSubId() {
-            return subId;
         }
     }
 
@@ -491,11 +757,16 @@ public class Dudly {
         PingCommand(int turnNumber, int subId) {
             super(turnNumber, subId);
         }
+
+        @Override
+        public String toString() {
+            return String.format("P|%d|%d", turnNumber, subId);
+        }
     }
 
     class SleepCommand extends SubmarineCommand {
-        private Equipment equip1;
-        private Equipment equip2;
+        final Equipment equip1;
+        final Equipment equip2;
 
         SleepCommand(int turnNumber, int subId, Equipment equip1, Equipment equip2) {
             super(turnNumber, subId);
@@ -503,69 +774,15 @@ public class Dudly {
             this.equip2 = equip2;
         }
 
-        public Equipment getEquip1() {
-            return equip1;
-        }
-
-        public Equipment getEquip2() {
-            return equip2;
-        }
-    }
-
-    class SprintCommand extends SubmarineCommand {
-        private Direction direction;
-        private int distance;
-
-        SprintCommand(int turnNumber, int subId, Direction direction, int distance) {
-            super(turnNumber, subId);
-            this.direction = direction;
-            this.distance = distance;
-        }
-
-        public Direction getDirection() {
-            return direction;
-        }
-
-        public int getDistance() {
-            return distance;
-        }
-    }
-
-    class FireCommand extends SubmarineCommand {
-        private Coordinate destination;
-
-        FireCommand(int turnNumber, int subId, Coordinate destination) {
-            super(turnNumber, subId);
-            this.destination = destination;
-        }
-
-        public Coordinate getDestination() {
-            return destination;
-        }
-    }
-
-    class MineCommand extends SubmarineCommand {
-        private Direction direction;
-
-        MineCommand(int turnNumber, int subId, Direction direction) {
-            super(turnNumber, subId);
-            this.direction = direction;
-        }
-
-        public Direction getDirection() {
-            return direction;
-        }
-    }
-
-    class SurfaceCommand extends SubmarineCommand {
-        SurfaceCommand(int turnNumber, int subId) {
-            super(turnNumber, subId);
+        @Override
+        public String toString() {
+            return String.format("S|%d|%d|%s|%s", turnNumber, subId, equip1, equip2);
         }
     }
 
     class MoveCommand extends SubmarineCommand {
-        private Direction direction;
-        private Equipment equip;
+        final Direction direction;
+        final Equipment equip;
 
         MoveCommand(int turnNumber, int subId, Direction direction, Equipment equip) {
             super(turnNumber, subId);
@@ -573,21 +790,69 @@ public class Dudly {
             this.equip = equip;
         }
 
-        Direction getDirection() {
-            return direction;
+        @Override
+        public String toString() {
+            return String.format("M|%d|%d|%s|%s", turnNumber, subId, direction, equip);
+        }
+    }
+
+    class SprintCommand extends SubmarineCommand {
+        final Direction direction;
+        final int distance;
+
+        SprintCommand(int turnNumber, int subId, Direction direction, int distance) {
+            super(turnNumber, subId);
+            this.direction = direction;
+            this.distance = distance;
         }
 
-        Equipment getEquip() {
-            return equip;
+        @Override
+        public String toString() {
+            return String.format("R|%d|%d|%s|%d", turnNumber, subId, direction, distance);
+        }
+    }
+
+    class FireCommand extends SubmarineCommand {
+        final Coordinate destination;
+
+        FireCommand(int turnNumber, int subId, Coordinate destination) {
+            super(turnNumber, subId);
+            this.destination = destination;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("F|%d|%d|%d|%d", turnNumber, subId, destination.x, destination.y);
+        }
+    }
+
+    class MineCommand extends SubmarineCommand {
+        final Direction direction;
+
+        MineCommand(int turnNumber, int subId, Direction direction) {
+            super(turnNumber, subId);
+            this.direction = direction;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("D|%d|%d|%s", turnNumber, subId, direction);
+        }
+    }
+
+    class SurfaceCommand extends SubmarineCommand {
+        SurfaceCommand(int turnNumber, int subId) {
+            super(turnNumber, subId);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("U|%d|%d", turnNumber, subId);
         }
     }
 
     class ServerMessage {
-        private String[] parts;
-
-        ServerMessage(String messageType, int minPartCount, String message) {
-            this(null, messageType, minPartCount, message);
-        }
+        final String[] parts;
 
         ServerMessage(String prefix, String messageType, int minPartCount, String message) {
             parts = (message == null ? new String[0] : message.split("\\|"));
@@ -605,217 +870,175 @@ public class Dudly {
             return ((parts != null) && (index >= 0) && (index < parts.length)) ? parts[index] : null;
         }
 
-        int getInt(int index) {
+        int getIntPart(int index) {
             return Integer.parseInt(getPart(index));
         }
     }
 
     class GameSettingMessage extends ServerMessage {
-        private String settingName;
-        private List<String> values = new ArrayList<>();
+        final String name;
+        final List<String> values = new ArrayList<>();
 
         GameSettingMessage(String message) throws Exception {
             super("V", "game setting", 3, message);
-            settingName = getPart(1);
+            name = getPart(1);
             for (int i = 2; i < getPartCount(); ++i) {
                 values.add(getPart(i));
             }
         }
 
-        String getSettingName() {
-            return settingName;
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(name);
+            sb.append(": ");
+            for (int i = 0; i < values.size(); ++i) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                sb.append(values.get(i));
+            }
+            return sb.toString();
         }
 
-        String getValue() {
-            return values.get(0);
-        }
-
-        List<String> getValues() {
-            return values;
+        int getIntValue(int index) {
+            return Integer.parseInt(values.get(index));
         }
     }
 
     class GameConfigMessage extends ServerMessage {
-        private String serverVersion;
-        private String gameTitle;
-        private int mapWidth;
-        private int mapHeight;
-        List<GameSettingMessage> customSettings = new ArrayList<>();
+        final String serverVersion;
+        final String gameTitle;
+        final int mapWidth;
+        final int mapHeight;
+        final List<GameSettingMessage> customSettings = new ArrayList<>();
 
         GameConfigMessage(String message) throws Exception {
-            super("game config", 5, message);
+            super("C", "game config", 5, message);
             serverVersion = getPart(1);
             gameTitle = getPart(2);
-            mapWidth = getInt(3);
-            mapHeight = getInt(4);
+            mapWidth = getIntPart(3);
+            mapHeight = getIntPart(4);
 
-            int settings = getInt(5);
+            int settings = getIntPart(5);
             for (int i = 0; i < settings; ++i) {
                 customSettings.add(new GameSettingMessage(receiveMessage()));
             }
         }
+    }
 
-        String getServerVersion() {
-            return serverVersion;
-        }
+    class TurnRelatedMessage extends ServerMessage {
+        final int turnNumber;
 
-        String getGameTitle() {
-            return gameTitle;
-        }
-
-        int getMapWidth() {
-            return mapWidth;
-        }
-
-        int getMapHeight() {
-            return mapHeight;
-        }
-
-        List<GameSettingMessage> getCustomSettings() {
-            return customSettings;
+        TurnRelatedMessage(String prefix, String messageType, int minPartCount, String message) throws Exception {
+            super(prefix, messageType, minPartCount, message);
+            turnNumber = getIntPart(1);
         }
     }
 
-    class TurnMessage extends ServerMessage {
-        private int turnNumber;
-
-        TurnMessage(String messageType, int minPartCount, String message) throws Exception {
-            super(messageType, minPartCount, message);
-            turnNumber = getInt(1);
-        }
-
-        int getTurnNumber() {
-            return turnNumber;
-        }
-    }
-
-    class BeginTurnMessage extends TurnMessage {
+    class BeginTurnMessage extends TurnRelatedMessage {
         BeginTurnMessage(String message) throws Exception {
-            super("begin turn", 2, message);
+            super("B", "begin turn", 2, message);
         }
     }
 
-    class ActivationsMessage extends TurnMessage {
-        private int activations;
+    class ActivationsMessage extends TurnRelatedMessage {
+        final int activations;
 
-        ActivationsMessage(String messageType, String message) throws Exception {
-            super(messageType, 3, message);
-            activations = getInt(2);
-        }
-
-        int getActivations() {
-            return activations;
+        ActivationsMessage(String prefix, String messageType, String message) throws Exception {
+            super(prefix, messageType, 3, message);
+            activations = getIntPart(2);
         }
     }
 
     class SonarActivationsMessage extends ActivationsMessage {
         SonarActivationsMessage(String message) throws Exception {
-            super("sonar activation", message);
+            super("S", "sonar activation", message);
         }
     }
 
     class SprintActivationsMessage extends ActivationsMessage {
         SprintActivationsMessage(String message) throws Exception {
-            super("sprint activation", message);
+            super("R", "sprint activation", message);
         }
     }
 
-    class DetonationMessage extends TurnMessage {
-        private Coordinate location;
-        private int radius;
+    class DetonationMessage extends TurnRelatedMessage {
+        final Coordinate location;
+        final int radius;
 
         DetonationMessage(String message) throws Exception {
-            super("detonation", 5, message);
-            int x = getInt(2);
-            int y = getInt(3);
-            radius = getInt(4);
+            super("D", "detonation", 5, message);
+            int x = getIntPart(2);
+            int y = getIntPart(3);
+            radius = getIntPart(4);
             location = new Coordinate(x, y);
-        }
-
-        Coordinate getLocation() {
-            return location;
-        }
-
-        int getRadius() {
-            return radius;
         }
     }
 
-    class DiscoveredObjectMessage extends TurnMessage {
-        private Coordinate location;
-        private int size;
+    class DiscoveredObjectMessage extends TurnRelatedMessage {
+        final Coordinate location;
+        final int size;
 
         DiscoveredObjectMessage(String message) throws Exception {
-            super("discovered object", 5, message);
-            int x = getInt(2);
-            int y = getInt(3);
-            size = getInt(4);
+            super("O", "discovered object", 5, message);
+            int x = getIntPart(2);
+            int y = getIntPart(3);
             location = new Coordinate(x, y);
-        }
-
-        Coordinate getLocation() {
-            return location;
-        }
-
-        int getSize() {
-            return size;
+            if (gameMap.get(location).blocked) {
+                size = 0;
+            } else {
+                size = getIntPart(4);
+            }
         }
     }
 
-    class HitMessage extends TurnMessage {
-        private Coordinate location;
-        private int damage;
+    class HitMessage extends TurnRelatedMessage {
+        final Coordinate location;
+        final int damage;
 
-        HitMessage(String messageType, String message) throws Exception {
-            super(messageType, 5, message);
-            int x = getInt(2);
-            int y = getInt(3);
-            damage = getInt(4);
+        HitMessage(String prefix, String messageType, String message) throws Exception {
+            super(prefix, messageType, 5, message);
+            int x = getIntPart(2);
+            int y = getIntPart(3);
+            damage = getIntPart(4);
             location = new Coordinate(x, y);
-        }
-
-        Coordinate getLocation() {
-            return location;
-        }
-
-        int getDamage() {
-            return damage;
         }
     }
 
     class TorpedoHitMessage extends HitMessage {
         TorpedoHitMessage(String message) throws Exception {
-            super("torpedo hit", message);
+            super("T", "torpedo hit", message);
         }
     }
 
     class MineHitMessage extends HitMessage {
         MineHitMessage(String message) throws Exception {
-            super("mine hit", message);
+            super("M", "mine hit", message);
         }
     }
 
-    class SubmarineInfoMessage extends TurnMessage {
-        private int subId;
-        private Coordinate location;
-        private boolean active;
-        private int shieldCount = 0;
-        private int torpedoCount = -1; // -1 == unlimited
-        private int mineCount = -1;    // -1 == unlimited
-        private int sonarRange = 0;
-        private int sprintRange = 0;
-        private int torpedoRange = 0;
-        private boolean mineReady = false;
-        private int surfaceTurnsRemaining = 0;
-        private int reactorDamage = 0;
-        private boolean dead = false;
+    class SubmarineInfoMessage extends TurnRelatedMessage {
+        final int subId;
+        final Coordinate location;
+        final boolean active;
+        boolean dead = false;
+        boolean mineReady = false;
+        int shieldCount = 0;
+        int torpedoCount = -1; // -1 == unlimited
+        int mineCount = -1;    // -1 == unlimited
+        int sonarRange = 0;
+        int sprintRange = 0;
+        int torpedoRange = 0;
+        int reactorDamage = 0;
+        int surfaceTurnsRemaining = 0;
 
         SubmarineInfoMessage(String message) throws Exception {
-            super("submarine info", 6, message);
-            subId = getInt(2);
-            int x = getInt(3);
-            int y = getInt(4);
-            active = (getInt(5) == 1);
+            super("I", "submarine info", 6, message);
+            subId = getIntPart(2);
+            int x = getIntPart(3);
+            int y = getIntPart(4);
+            active = (getIntPart(5) == 1);
             location = new Coordinate(x, y);
 
             for (int i = 6; i < getPartCount(); ++i) {
@@ -845,134 +1068,42 @@ public class Dudly {
                 }
             }
         }
-
-        int getSubId() {
-            return subId;
-        }
-
-        int getSonarRange() {
-            return sonarRange;
-        }
-
-        Coordinate getLocation() {
-            return location;
-        }
-
-        boolean isActive() {
-            return active;
-        }
-
-        int getShieldCount() {
-            return shieldCount;
-        }
-
-        boolean unlimitedTorpedos() {
-            return (torpedoCount < 0);
-        }
-
-        boolean unlimitedMines() {
-            return (mineCount < 0);
-        }
-
-        int getTorpedoCount() {
-            return torpedoCount;
-        }
-
-        int getMineCount() {
-            return mineCount;
-        }
-
-        int getSprintRange() {
-            return sprintRange;
-        }
-
-        int getTorpedoRange() {
-            return torpedoRange;
-        }
-
-        boolean isMineReady() {
-            return mineReady;
-        }
-
-        boolean isSurfaced() {
-            return (surfaceTurnsRemaining > 0);
-        }
-
-        int getSurfaceTurnsRemaining() {
-            return surfaceTurnsRemaining;
-        }
-
-        int getReactorDamage() {
-            return reactorDamage;
-        }
-
-        boolean isDead() {
-            return dead;
-        }
     }
 
-    class PlayerScoreMessage extends TurnMessage {
-        private int score;
+    class PlayerScoreMessage extends TurnRelatedMessage {
+        final int score;
 
         PlayerScoreMessage(String message) throws Exception {
-            super("player score", 3, message);
-            score = getInt(2);
-        }
-
-        int getScore() {
-            return score;
-        }
-    }
-
-    class GameFinishedMessage extends ServerMessage {
-        private int playerCount;
-        private int turnCount;
-        private String gameState;
-        private List<PlayerResultMessage> playerResults;
-
-        GameFinishedMessage(String message) throws Exception {
-            super("game finished", 4, message);
-            playerCount = getInt(1);
-            turnCount = getInt(2);
-            gameState = getPart(3);
-            for (int i = 0; i < playerCount; ++i) {
-                playerResults.add(new PlayerResultMessage(receiveMessage()));
-            }
-        }
-
-        int getPlayerCount() {
-            return playerCount;
-        }
-
-        int getTurnCount() {
-            return turnCount;
-        }
-
-        String getGameState() {
-            return gameState;
-        }
-
-        List<PlayerResultMessage> getPlayerResults() {
-            return playerResults;
+            super("H", "player score", 3, message);
+            score = getIntPart(2);
         }
     }
 
     class PlayerResultMessage extends ServerMessage {
-        private String playerName;
-        private int playerScore;
+        final String playerName;
+        final int playerScore;
 
         PlayerResultMessage(String message) throws Exception {
-            super("player result", 3, message);
+            super("P", "player result", 3, message);
             playerName = getPart(1);
-            playerScore = getInt(2);
+            playerScore = getIntPart(2);
         }
+    }
 
-        String getPlayerName() {
-            return playerName;
-        }
+    class GameFinishedMessage extends ServerMessage {
+        final int playerCount;
+        final int turnCount;
+        final String gameState;
+        final List<PlayerResultMessage> playerResults = new ArrayList<>();
 
-        int getPlayerScore() {
-            return playerScore;
+        GameFinishedMessage(String message) throws Exception {
+            super("F", "game finished", 4, message);
+            playerCount = getIntPart(1);
+            turnCount = getIntPart(2);
+            gameState = getPart(3);
+            for (int i = 0; i < playerCount; ++i) {
+                playerResults.add(new PlayerResultMessage(receiveMessage()));
+            }
         }
     }
 

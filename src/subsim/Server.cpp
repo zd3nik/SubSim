@@ -196,9 +196,12 @@ Server::getGameTitle(std::string& title) {
       title = input.getStr();
       if (title.empty()) {
         return false;
+      } else if (input.getFieldCount() > 1) {
+        Screen::print() << "Title may not contain '|' character" << EL << Flush;
+        title.clear();
       }
     }
-    if ((input.getFieldCount() > 1) || contains(title, '|')) {
+    if (contains(title, '|')) {
       Screen::print() << "Title may not contain '|' character" << EL << Flush;
       title.clear();
     } else if (title.size() > 20) {
@@ -435,6 +438,9 @@ void
 Server::handlePlayerInput(const int handle) {
   if (!input.readln(handle)) {
     removePlayer(handle);
+    if (game.getPlayerCount() < 1) {
+      game.finish();
+    }
   } else {
     std::string err;
     std::string str = input.getStr();
@@ -701,8 +707,9 @@ Server::sendGameResults() {
   for (auto& recipient : players) {
     if (recipient->isConnected()) {
       send((*recipient), finishMessage);
-      gameLog << "SERVER ALL: " << Msg('P') << recipient->getName()
-              << recipient->getScore() << std::endl;
+      gameLog << "SERVER ALL: "
+              << (Msg('P') << recipient->getName() << recipient->getScore())
+              << std::endl;
 
       for (auto& player : players) {
         send((*recipient), Msg('P') << player->getName() << player->getScore());
