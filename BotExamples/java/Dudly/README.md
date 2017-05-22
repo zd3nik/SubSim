@@ -28,3 +28,12 @@ Here is an example that runs Dudly with the username `The Dude`, server address 
 
     java Dudly "The Dude" 172.17.0.1 7777
 
+Run in DEBUG mode
+-----------------
+
+Set an environment variable named DEBUG to 1 to run Dudly in debug mode:
+
+    DEBUG=1 java Dudly
+
+In this mode Dudly will output all client/server protocol messages and wait for you to press enter at the beginning of every turn.
+

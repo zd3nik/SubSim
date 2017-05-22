@@ -15,9 +15,9 @@ import java.util.*;
  * The internal classes in this example do not need to be internal.  They were made internal in order to keep
  * this example to a single source file.
  */
-public class Dudly {
+public class DudlyJr {
 
-    private static final String DEFAULT_USERNAME = "Dudly";
+    private static final String DEFAULT_USERNAME = "DudlyJr";
     private static final String DEFAULT_SERVER_ADDRESS = "localhost";
     private static final int DEFAULT_SERVER_PORT = 9555;
     private static final Random random = new Random();
@@ -37,17 +37,15 @@ public class Dudly {
     private PrintWriter socketWriter = null;
     private Map<Coordinate, MapSquare> gameMap = new HashMap<>();
     private List<SonarDetectionMessage> spotted = new ArrayList<>();
-    private List<SprintDetectionMessage> sprints = new ArrayList<>();
     private List<DetonationMessage> detonations = new ArrayList<>();
     private List<TorpedoHitMessage> torpedoHits = new ArrayList<>();
-    private List<MineHitMessage> mineHits = new ArrayList<>();
     private Submarine mySub = new Submarine(0); // only 1 sub supported in this bot
     private Coordinate randomDestination = null;
     private int mapWidth = 0;
     private int mapHeight = 0;
     private int turnNumber = 0;
 
-    private Dudly(String username, String serverAddress, int serverPort) {
+    private DudlyJr(String username, String serverAddress, int serverPort) {
         this.username = username;
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
@@ -55,16 +53,11 @@ public class Dudly {
     }
 
     public static void main(String[] args) {
-        if (helpRequested(args)) {
-            System.out.println("usage: java Dudly [username [server_address [server_port]]]");
-            return;
-        }
-
         String usernameArg      = getArg(args, 0, DEFAULT_USERNAME);
         String serverAddressArg = getArg(args, 1, DEFAULT_SERVER_ADDRESS);
         int serverPortArg       = getArg(args, 2, DEFAULT_SERVER_PORT);
 
-        Dudly bot = new Dudly(usernameArg, serverAddressArg, serverPortArg);
+        DudlyJr bot = new DudlyJr(usernameArg, serverAddressArg, serverPortArg);
 
         try {
             bot.login();
@@ -76,15 +69,6 @@ public class Dudly {
         } finally {
             bot.disconnect();
         }
-    }
-
-    private static boolean helpRequested(String[] args) {
-        for (String arg : args) {
-            if ("-h".equals(arg) || "--help".equals(arg)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static String getArg(String[] args, int index, String defaultValue) {
@@ -156,17 +140,6 @@ public class Dudly {
         System.out.println("Server Version     = " + message.serverVersion);
         System.out.println("Game Title         = " + message.gameTitle);
         System.out.println("Game Map Size      = " + mapWidth + " x " + mapHeight);
-
-        for (GameSettingMessage setting : message.customSettings) {
-            System.out.println("Customized Setting = " + setting);
-            if ("SubsPerPlayer".equals(setting.name)) {
-                throw new Exception("This bot doesn't support more than 1 sub per player");
-            } else if ("Obstacle".equals(setting.name)) {
-                int x = setting.getIntValue(0);
-                int y = setting.getIntValue(1);
-                gameMap.get(new Coordinate(x, y)).blocked = true;
-            }
-        }
     }
 
     private void play() throws Exception {
@@ -177,14 +150,10 @@ public class Dudly {
                 handleMessage(new BeginTurnMessage(message));
             } else if (message.startsWith("S|")) {
                 handleMessage(new SonarDetectionMessage(message));
-            } else if (message.startsWith("R|")) {
-                handleMessage(new SprintDetectionMessage(message));
             } else if (message.startsWith("D|")) {
                 handleMessage(new DetonationMessage(message));
             } else if (message.startsWith("T|")) {
                 handleMessage(new TorpedoHitMessage(message));
-            } else if (message.startsWith("M|")) {
-                handleMessage(new MineHitMessage(message));
             } else if (message.startsWith("O|")) {
                 handleMessage(new DiscoveredObjectMessage(message));
             } else if (message.startsWith("I|")) {
@@ -229,10 +198,8 @@ public class Dudly {
         }
 
         spotted.clear();
-        sprints.clear();
         detonations.clear();
         torpedoHits.clear();
-        mineHits.clear();
     }
 
     private Map<Coordinate, Integer> squaresInRangeOf(Coordinate from, int range) throws Exception {
@@ -392,8 +359,7 @@ public class Dudly {
         }
 
         // pick an item to charge
-        Equipment charge = (sub.maxTorpedoCharge || (sub.torpedoCount == 0) ||
-                (sub.torpedoRange >= sub.sonarRange) || (random.nextInt(100) < 33))
+        Equipment charge = (sub.maxTorpedoCharge || (sub.torpedoRange >= sub.sonarRange) || (random.nextInt(100) < 33))
                 ? Equipment.Sonar
                 : Equipment.Torpedo;
 
@@ -407,11 +373,6 @@ public class Dudly {
         spotted.add(message);
     }
 
-    private void handleMessage(SprintDetectionMessage message) {
-        checkTurnNumber(message);
-        sprints.add(message);
-    }
-
     private void handleMessage(DetonationMessage message) {
         checkTurnNumber(message);
         detonations.add(message);
@@ -420,11 +381,6 @@ public class Dudly {
     private void handleMessage(TorpedoHitMessage message) {
         checkTurnNumber(message);
         torpedoHits.add(message);
-    }
-
-    private void handleMessage(MineHitMessage message) {
-        checkTurnNumber(message);
-        mineHits.add(message);
     }
 
     private void handleMessage(DiscoveredObjectMessage message) {
@@ -552,8 +508,7 @@ public class Dudly {
     enum Equipment {
         None("None"),
         Sonar("Sonar"),
-        Torpedo("Torpedo"),
-        Sprint("Sprint");
+        Torpedo("Torpedo");
 
         private final String name;
 
@@ -640,19 +595,12 @@ public class Dudly {
         Coordinate location = new Coordinate(0, 0);
         boolean dead = false;
         boolean active = true;
-        boolean mineReady = false;
         boolean maxSonarCharge = false;
-        boolean maxSprintCharge = false;
         boolean maxTorpedoCharge = false;
         int size = 100;
         int shieldCount = 3;
-        int torpedoCount = -1; // -1 = unlimited
-        int mineCount = -1;    // -1 = unlimited
         int sonarRange = 0;
-        int sprintRange = 0;
         int torpedoRange = 0;
-        int reactorDamage = 0;
-        int surfaceTurnsRemaining = 0;
 
         Submarine(int subId) {
             this.subId = subId;
@@ -665,18 +613,11 @@ public class Dudly {
             location = info.location;
             dead = info.dead;
             active = info.active;
-            mineReady = info.mineReady;
             maxSonarCharge = info.maxSonarCharge;
-            maxSprintCharge = info.maxSprintCharge;
             maxTorpedoCharge = info.maxTorpedoCharge;
             shieldCount = info.shieldCount;
-            torpedoCount = info.torpedoCount;
-            mineCount = info.mineCount;
             sonarRange = info.sonarRange;
-            sprintRange = info.sprintRange;
             torpedoRange = info.torpedoRange;
-            reactorDamage = info.reactorDamage;
-            surfaceTurnsRemaining = info.surfaceTurnsRemaining;
         }
 
         int getX() {
@@ -687,44 +628,16 @@ public class Dudly {
             return location.y;
         }
 
-        boolean hasUnlimitedTorpedos() {
-            return (torpedoCount < 0);
-        }
-
-        boolean hasUnlimitedMines() {
-            return (mineCount < 0);
-        }
-
-        boolean isSurfaced() {
-            return (surfaceTurnsRemaining > 0);
-        }
-
         PingCommand ping(int turnNumber) {
             return new PingCommand(turnNumber, subId);
-        }
-
-        SleepCommand sleep(int turnNumber, Equipment equip1, Equipment equip2) {
-            return new SleepCommand(turnNumber, subId, equip1, equip2);
         }
 
         MoveCommand move(int turnNumber, Direction direction, Equipment equip) {
             return new MoveCommand(turnNumber, subId, direction, equip);
         }
 
-        SprintCommand sprint(int turnNumber, Direction direction, int distance) {
-            return new SprintCommand(turnNumber, subId, direction, distance);
-        }
-
         FireCommand fireTorpedo(int turnNumber, Coordinate destination) {
             return new FireCommand(turnNumber, subId, destination);
-        }
-
-        MineCommand deployMine(int turnNumber, Direction direction) {
-            return new MineCommand(turnNumber, subId, direction);
-        }
-
-        SurfaceCommand surface(int turnNumber) {
-            return new SurfaceCommand(turnNumber, subId);
         }
     }
 
@@ -749,22 +662,6 @@ public class Dudly {
         }
     }
 
-    class SleepCommand extends SubmarineCommand {
-        final Equipment equip1;
-        final Equipment equip2;
-
-        SleepCommand(int turnNumber, int subId, Equipment equip1, Equipment equip2) {
-            super(turnNumber, subId);
-            this.equip1 = equip1;
-            this.equip2 = equip2;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("S|%d|%d|%s|%s", turnNumber, subId, equip1, equip2);
-        }
-    }
-
     class MoveCommand extends SubmarineCommand {
         final Direction direction;
         final Equipment equip;
@@ -781,22 +678,6 @@ public class Dudly {
         }
     }
 
-    class SprintCommand extends SubmarineCommand {
-        final Direction direction;
-        final int distance;
-
-        SprintCommand(int turnNumber, int subId, Direction direction, int distance) {
-            super(turnNumber, subId);
-            this.direction = direction;
-            this.distance = distance;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("R|%d|%d|%s|%d", turnNumber, subId, direction, distance);
-        }
-    }
-
     class FireCommand extends SubmarineCommand {
         final Coordinate destination;
 
@@ -808,31 +689,6 @@ public class Dudly {
         @Override
         public String toString() {
             return String.format("F|%d|%d|%d|%d", turnNumber, subId, destination.x, destination.y);
-        }
-    }
-
-    class MineCommand extends SubmarineCommand {
-        final Direction direction;
-
-        MineCommand(int turnNumber, int subId, Direction direction) {
-            super(turnNumber, subId);
-            this.direction = direction;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("D|%d|%d|%s", turnNumber, subId, direction);
-        }
-    }
-
-    class SurfaceCommand extends SubmarineCommand {
-        SurfaceCommand(int turnNumber, int subId) {
-            super(turnNumber, subId);
-        }
-
-        @Override
-        public String toString() {
-            return String.format("U|%d|%d", turnNumber, subId);
         }
     }
 
@@ -867,29 +723,11 @@ public class Dudly {
         }
     }
 
-    class GameSettingMessage extends ServerMessage {
-        final String name;
-        final List<String> values = new ArrayList<>();
-
-        GameSettingMessage(String message) throws Exception {
-            super("V", "game setting", 3, message);
-            name = getPart(1);
-            for (int i = 2; i < getPartCount(); ++i) {
-                values.add(getPart(i));
-            }
-        }
-
-        int getIntValue(int index) {
-            return Integer.parseInt(values.get(index));
-        }
-    }
-
     class GameConfigMessage extends ServerMessage {
         final String serverVersion;
         final String gameTitle;
         final int mapWidth;
         final int mapHeight;
-        final List<GameSettingMessage> customSettings = new ArrayList<>();
 
         GameConfigMessage(String message) throws Exception {
             super("C", "game config", 5, message);
@@ -900,7 +738,7 @@ public class Dudly {
 
             int settings = getIntPart(5);
             for (int i = 0; i < settings; ++i) {
-                customSettings.add(new GameSettingMessage(receiveMessage()));
+                receiveMessage(); // consume and ignore custom settings
             }
         }
     }
@@ -928,17 +766,6 @@ public class Dudly {
             super("S", "sonar detection", 4, message);
             subId = getIntPart(2);
             distance = getIntPart(3);
-        }
-    }
-
-    class SprintDetectionMessage extends TurnRelatedMessage {
-        final int subId;
-        final int count;
-
-        SprintDetectionMessage(String message) throws Exception {
-            super("R", "sprint detection", 4, message);
-            subId = getIntPart(2);
-            count = getIntPart(3);
         }
     }
 
@@ -972,28 +799,16 @@ public class Dudly {
         }
     }
 
-    class HitMessage extends TurnRelatedMessage {
+    class TorpedoHitMessage extends TurnRelatedMessage {
         final Coordinate location;
         final int damage;
 
-        HitMessage(String prefix, String messageType, String message) throws Exception {
-            super(prefix, messageType, 5, message);
+        TorpedoHitMessage(String message) throws Exception {
+            super("T", "torpedo hit", 5, message);
             int x = getIntPart(2);
             int y = getIntPart(3);
             damage = getIntPart(4);
             location = new Coordinate(x, y);
-        }
-    }
-
-    class TorpedoHitMessage extends HitMessage {
-        TorpedoHitMessage(String message) throws Exception {
-            super("T", "torpedo hit", message);
-        }
-    }
-
-    class MineHitMessage extends HitMessage {
-        MineHitMessage(String message) throws Exception {
-            super("M", "mine hit", message);
         }
     }
 
@@ -1002,18 +817,10 @@ public class Dudly {
         final Coordinate location;
         final boolean active;
         boolean dead = false;
-        boolean mineReady = false;
         int shieldCount = 0;
-        int size = 100;
-        int torpedoCount = -1; // -1 == unlimited
-        int mineCount = -1;    // -1 == unlimited
         int sonarRange = 0;
-        int sprintRange = 0;
         int torpedoRange = 0;
-        int reactorDamage = 0;
-        int surfaceTurnsRemaining = 0;
         boolean maxSonarCharge = false;
-        boolean maxSprintCharge = false;
         boolean maxTorpedoCharge = false;
 
         SubmarineInfoMessage(String message) throws Exception {
@@ -1030,30 +837,14 @@ public class Dudly {
                     throw new IllegalArgumentException(String.format("invalid submarine info message: %s", message));
                 } else if ("shields".equals(var[0])) {
                     shieldCount = Integer.parseInt(var[1]);
-                } else if ("size".equals(var[0])) {
-                    size = Integer.parseInt(var[1]);
-                } else if ("torpedos".equals(var[0])) {
-                    torpedoCount = Integer.parseInt(var[1]);
-                } else if ("mines".equals(var[0])) {
-                    mineCount = Integer.parseInt(var[1]);
                 } else if ("sonar_range".equals(var[0])) {
                     sonarRange = Integer.parseInt(var[1]);
                 } else if ("max_sonar".equals(var[0])) {
                     maxSonarCharge = "1".equals(var[1]);
-                } else if ("sprint_range".equals(var[0])) {
-                    sprintRange = Integer.parseInt(var[1]);
-                } else if ("max_sprint".equals(var[0])) {
-                    maxSprintCharge = "1".equals(var[1]);
                 } else if ("torpedo_range".equals(var[0])) {
                     torpedoRange = Integer.parseInt(var[1]);
                 } else if ("max_torpedo".equals(var[0])) {
                     maxTorpedoCharge = "1".equals(var[1]);
-                } else if ("mine_ready".equals(var[0])) {
-                    mineReady = (Integer.parseInt(var[1]) == 1);
-                } else if ("surface_remain".equals(var[0])) {
-                    surfaceTurnsRemaining = Integer.parseInt(var[1]);
-                } else if ("reactor_damage".equals(var[0])) {
-                    reactorDamage = Integer.parseInt(var[1]);
                 } else if ("dead".equals(var[0])) {
                     dead = (Integer.parseInt(var[1]) == 1);
                 }
