@@ -326,7 +326,9 @@ Server::beginGame() {
     gameLog << "SERVER ALL: " << setting.toMessage() << std::endl;
   }
 
-  for (const PlayerPtr& player : game.getPlayers()) {
+  char ch = 'A';
+  for (PlayerPtr& player : game.getPlayers()) {
+    player->setMapChar(ch++);
     gameLog << "SERVER ALL: J|" << player->getName() << std::endl;
   }
 

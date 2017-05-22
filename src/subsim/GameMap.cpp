@@ -2,6 +2,7 @@
 // Copyright (c) 2017 Shawn Chidester, All rights reserved
 //-----------------------------------------------------------------------------
 #include "GameMap.h"
+#include "Submarine.h"
 #include "utils/Error.h"
 #include "utils/Movement.h"
 #include "utils/Msg.h"
@@ -22,10 +23,12 @@ GameMap::print(Coordinate& coord) const {
     for (unsigned x = 1; x <= getWidth(); ++x) {
       const Square& square = getSquare(Coordinate(x, y));
       const unsigned count = square.getObjectCount();
-      if (square.isBlocked()) {
-        Screen::print() << "  #";
-      } else if (count) {
+      if (count > 1) {
+        ASSERT(!square.isBlocked());
         Screen::print() << rPad(count, 3, ' ');
+      } else if (count) {
+        const char ch = (*square.begin())->getMapChar();
+        Screen::print() << rPad(toStr(ch), 3, ' ');
       } else {
         Screen::print() << "  .";
       }

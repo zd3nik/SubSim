@@ -25,7 +25,7 @@ Player::toString() const {
 std::string
 Player::summary(const bool gameStarted) const {
   std::stringstream ss;
-  ss << handle() << ": " << socket.getLabel();
+  ss << toStr(mapChar) << "(" << handle() << "): " << socket.getLabel();
   if (socket) {
     ss << " [" << socket.getAddress() << ']';
   }
@@ -36,6 +36,15 @@ Player::summary(const bool gameStarted) const {
     ss << ", Score = " << score << ", Turns = " << turns;
   }
   return ss.str();
+}
+
+//-----------------------------------------------------------------------------
+void
+Player::setMapChar(const char ch) {
+  mapChar = ch;
+  for (SubmarinePtr& sub : subs) {
+    sub->setMapChar(ch);
+  }
 }
 
 //-----------------------------------------------------------------------------

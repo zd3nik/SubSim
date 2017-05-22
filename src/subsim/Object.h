@@ -15,6 +15,7 @@ namespace subsim
 class Object : public Printable {
 //-----------------------------------------------------------------------------
 private: // variables
+  char mapChar;
   unsigned playerID;
   unsigned objectID;
   unsigned size;
@@ -29,11 +30,13 @@ public: // constructors
   Object& operator=(Object&&) noexcept = default;
   Object& operator=(const Object&) noexcept = default;
 
-  Object(const unsigned playerID,
+  Object(const char mapChar,
+         const unsigned playerID,
          const unsigned objectID,
          const unsigned size,
          const bool permanent) noexcept
-    : playerID(playerID),
+    : mapChar(mapChar),
+      playerID(playerID),
       objectID(objectID),
       size(size),
       permanent(permanent)
@@ -41,12 +44,20 @@ public: // constructors
 
 //-----------------------------------------------------------------------------
 public: // setters
+  void setMapChar(const char ch) noexcept {
+    mapChar = ch;
+  }
+
   void setLocation(const Coordinate& coord) noexcept {
     location = coord;
   }
 
 //-----------------------------------------------------------------------------
 public: // getters
+  unsigned getMapChar() const noexcept {
+    return mapChar;
+  }
+
   unsigned getPlayerID() const noexcept {
     return playerID;
   }

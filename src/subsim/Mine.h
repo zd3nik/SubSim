@@ -20,8 +20,8 @@ public: // constructors
   Mine& operator=(Mine&&) noexcept = default;
   Mine& operator=(const Mine&) noexcept = default;
 
-  Mine(const unsigned playerID) noexcept
-    : Object(playerID, ~0U, 10, false)
+  Mine(const unsigned playerID, const char mapChar) noexcept
+    : Object(mapChar, playerID, ~0U, 10, false)
   { }
 
 //-----------------------------------------------------------------------------

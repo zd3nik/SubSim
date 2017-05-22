@@ -54,6 +54,7 @@ public: // constructors
 
   Submarine(const unsigned subID = 0, const unsigned size = 100) noexcept;
   Submarine(const unsigned playerID,
+            const char mapChar,
             const unsigned subID,
             const Submarine& subTemplate) noexcept;
 

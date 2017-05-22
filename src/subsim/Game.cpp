@@ -287,8 +287,8 @@ Game::addPlayer(PlayerPtr player, Input& input) {
     }
 
     // create sub from template specified in the game config
-    SubmarinePtr sub = std::make_shared<Submarine>(player->handle(), subID,
-                                                   subConfig);
+    SubmarinePtr sub = std::make_shared<Submarine>(
+          player->handle(), player->getMapChar(), subID, subConfig);
 
     // update its starting location
     if (gameMap.contains(subConfig.getLocation())) {
@@ -887,10 +887,17 @@ Game::exec(SubmarinePtr& sub, const MineCommand& command) {
   const Coordinate to = (sub->getLocation() + command.getDirection());
   if (gameMap.contains(to) && !gameMap.getSquare(to).isBlocked()) {
     if (sub->mine()) {
+      const int playerHandle = static_cast<int>(sub->getPlayerID());
+      PlayerPtr player = getPlayer(playerHandle);
+      if (!player) {
+        throw Error(Msg() << "No player for handle " << playerHandle);
+      }
+
       Square& dest = gameMap.getSquare(to);
-      const bool occupied = dest.isOccupied();
-      gameMap.addObject(to, std::make_shared<Mine>(sub->getPlayerID()));
-      if (occupied) {
+      gameMap.addObject(to, std::make_shared<Mine>(
+                          sub->getPlayerID(), tolower(player->getMapChar())));
+
+      if (dest.isOccupied()) {
         detonateMines(gameMap.getSquare(to));
       }
     }

@@ -22,6 +22,7 @@ private: // variables
   std::vector<SubmarinePtr> subs;
   unsigned score = 0;
   unsigned turns = 0;
+  char mapChar = '?';
 
 //-----------------------------------------------------------------------------
 public: // constructors
@@ -49,6 +50,7 @@ public: // methods
   }
 
   std::string summary(const bool gameStarted) const;
+  void setMapChar(const char ch);
   void stealConnectionFrom(Player&);
   void addSubmarine(SubmarinePtr);
   void addStatsTo(DBRecord&, const bool first, const bool last) const;
@@ -79,6 +81,10 @@ public: // setters
 
 //-----------------------------------------------------------------------------
 public: // getters
+  char getMapChar() const noexcept {
+    return mapChar;
+  }
+
   unsigned getPlayerID() const noexcept {
     return static_cast<unsigned>(handle());
   }

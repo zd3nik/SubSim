@@ -20,7 +20,7 @@ public: // constructors
   Obstacle& operator=(const Obstacle&) noexcept = default;
 
   Obstacle() noexcept
-    : Object(~0U, ~0U, ~0U, true)
+    : Object('#', ~0U, ~0U, ~0U, true)
   { }
 
 //-----------------------------------------------------------------------------
