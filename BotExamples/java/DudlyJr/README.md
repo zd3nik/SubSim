@@ -1,7 +1,7 @@
 Dudly Junior
 ============
 
-DudlyJr is a simplified version of DudlyJr.  DudlyJr is the same as DudlyJr with the following exceptions:
+DudlyJr is a simplified version of Dudly.  DudlyJr is the same as Dudly with the following exceptions:
 
  * Custom game settings not supported.
  * Only messages related to Move, Fire, and Ping are supported.
