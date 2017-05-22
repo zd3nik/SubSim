@@ -270,6 +270,7 @@ Server::send(Player& recipient, const std::string& msg,
 //-----------------------------------------------------------------------------
 bool
 Server::waitForInput(const int timeout) {
+  // TODO handle turn timeout
   std::set<int> ready;
   if (!input.waitForData(ready, timeout)) {
     return false;
@@ -326,11 +327,7 @@ Server::beginGame() {
   }
 
   for (const PlayerPtr& player : game.getPlayers()) {
-    gameLog << "SERVER ALL: J|" << player->getName();
-    for (unsigned subID = 0; subID < player->getSubmarineCount(); ++subID) {
-      gameLog << '|' << player->getSubmarine(subID).getLocation().toString();
-    }
-    gameLog << std::endl;
+    gameLog << "SERVER ALL: J|" << player->getName() << std::endl;
   }
 
   std::map<unsigned, std::string> errs = game.start(gameLog);
@@ -531,8 +528,7 @@ Server::joinGame(const int handle) {
   }
 
   // send confirmation to joining Player
-  CSVWriter joinMsg = Msg('J') << playerName;
-  send((*player), joinMsg);
+  send((*player), Msg('J') << playerName);
 
   // start the game if max player count reached and autoStart enabled
   if (maxPlayers && (game.getPlayerCount() == maxPlayers)) {

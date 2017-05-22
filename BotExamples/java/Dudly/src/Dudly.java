@@ -43,7 +43,6 @@ public class Dudly {
     private int mapWidth = 0;
     private int mapHeight = 0;
     private int turnNumber = 0;
-    private int maxRange = 0;
     private int sonarActivations = 0;
     private int sprintActivations = 0;
 
@@ -125,17 +124,9 @@ public class Dudly {
         // immediately after connecting the server sends a game config message
         configure(new GameConfigMessage(receiveMessage()));
 
-        // join the game by sending a "Join Game" message with our username
-        if (mySub.location.isValid()) {
-            // game config from server provided a start location for our submarine
-            // send "Join Game" message without sub start location
-            sendMessage(String.format("J|%s", username));
-        } else {
-            // game config from server didn't provide a start location for our submarine
-            // we must choose a start location and include it in the "Join Game" message
-            mySub.location = randomSquare();
-            sendMessage(String.format("J|%s|%d|%d", username, mySub.getX(), mySub.getY()));
-        }
+        // send our player name and sub location to join
+        mySub.location = randomSquare();
+        sendMessage(String.format("J|%s|%d|%d", username, mySub.getX(), mySub.getY()));
 
         // if join was successful we get a "J|username" message back, otherwise the join failed
         String response = receiveMessage();
@@ -146,7 +137,6 @@ public class Dudly {
 
     private void configure(GameConfigMessage message) throws Exception {
         turnNumber = 0;
-        maxRange = 20;
         mapWidth = message.mapWidth;
         mapHeight = message.mapHeight;
         gameMap = new HashMap<>(mapWidth * mapHeight);
@@ -169,27 +159,11 @@ public class Dudly {
             System.out.println("Customized Setting = " + setting);
             if ("SubsPerPlayer".equals(setting.name)) {
                 throw new Exception("This bot doesn't support more than 1 sub per player");
-            } else if ("SubStartLocation".equals(setting.name)) {
-                int subId = setting.getIntValue(0);
-                int x = setting.getIntValue(1);
-                int y = setting.getIntValue(2);
-                if (subId != mySub.subId) {
-                    throw new Exception("Unknown subId (" + subId + ") in SubStartLocation message");
-                }
-                mySub.location = new Coordinate(x, y);
-            } else if ("SubSize".equals(setting.name)) {
-                int subId = setting.getIntValue(0);
-                int size = setting.getIntValue(1);
-                if (subId != mySub.subId) {
-                    throw new Exception("Unknown subId (" + subId + ") in SubSize message");
-                }
-                mySub.size = size;
             } else if ("Obstacle".equals(setting.name)) {
                 int x = setting.getIntValue(0);
                 int y = setting.getIntValue(1);
                 gameMap.get(new Coordinate(x, y)).blocked = true;
             }
-            // TODO update maxRange if maxTorpedoCharge or maxSonarCharge < maxRange
         }
     }
 
@@ -226,7 +200,8 @@ public class Dudly {
 
     private void checkTurnNumber(TurnRelatedMessage message) {
         if (message.turnNumber != turnNumber) {
-            throw new IllegalStateException("turn number out of sync!");
+            throw new IllegalStateException("expected turn number " + turnNumber +
+                    " got turn number " + message.turnNumber + " on message: " + message);
         }
     }
 
@@ -398,14 +373,15 @@ public class Dudly {
             return;
         }
 
-        // do sonar ping if torpedo range >= sonar range
-        if ((sub.torpedoRange >= sub.sonarRange) && (sub.sonarRange > (1 + random.nextInt(6)))) {
+        // do sonar ping?
+        if (sub.maxSonarCharge ||
+                ((sub.torpedoRange >= sub.sonarRange) && (sub.sonarRange > (1 + random.nextInt(6))))) {
             sendMessage(sub.ping(turnNumber).toString());
             randomDestination = null;
             return;
         }
 
-        // pick a random destination square
+        // pick a new random destination square?
         if ((randomDestination == null) || (randomDestination.equals(sub.location))) {
             randomDestination = randomSquare(sub.location);
             if (debugMode) {
@@ -414,7 +390,7 @@ public class Dudly {
         }
 
         // pick an item to charge
-        Equipment charge = ((sub.torpedoRange >= Math.min(sub.sonarRange, maxRange)) || (random.nextInt(100) < 33))
+        Equipment charge = (sub.maxTorpedoCharge || (sub.torpedoRange >= sub.sonarRange) || (random.nextInt(100) < 33))
                 ? Equipment.Sonar
                 : Equipment.Torpedo;
 
@@ -662,6 +638,9 @@ public class Dudly {
         boolean dead = false;
         boolean active = true;
         boolean mineReady = false;
+        boolean maxSonarCharge = false;
+        boolean maxSprintCharge = false;
+        boolean maxTorpedoCharge = false;
         int size = 100;
         int shieldCount = 3;
         int torpedoCount = -1; // -1 = unlimited
@@ -684,6 +663,9 @@ public class Dudly {
             dead = info.dead;
             active = info.active;
             mineReady = info.mineReady;
+            maxSonarCharge = info.maxSonarCharge;
+            maxSprintCharge = info.maxSprintCharge;
+            maxTorpedoCharge = info.maxTorpedoCharge;
             shieldCount = info.shieldCount;
             torpedoCount = info.torpedoCount;
             mineCount = info.mineCount;
@@ -852,14 +834,21 @@ public class Dudly {
     }
 
     class ServerMessage {
+        final String message;
         final String[] parts;
 
         ServerMessage(String prefix, String messageType, int minPartCount, String message) {
+            this.message = message;
             parts = (message == null ? new String[0] : message.split("\\|"));
             if (((prefix != null) && ((parts.length < 1) || !parts[0].equals(prefix))) ||
                     (parts.length < minPartCount)) {
                 throw new IllegalArgumentException(String.format("invalid %s message: %s", messageType, message));
             }
+        }
+
+        @Override
+        public String toString() {
+            return message;
         }
 
         int getPartCount() {
@@ -885,20 +874,6 @@ public class Dudly {
             for (int i = 2; i < getPartCount(); ++i) {
                 values.add(getPart(i));
             }
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append(name);
-            sb.append(": ");
-            for (int i = 0; i < values.size(); ++i) {
-                if (i > 0) {
-                    sb.append(", ");
-                }
-                sb.append(values.get(i));
-            }
-            return sb.toString();
         }
 
         int getIntValue(int index) {
@@ -1025,6 +1000,7 @@ public class Dudly {
         boolean dead = false;
         boolean mineReady = false;
         int shieldCount = 0;
+        int size = 100;
         int torpedoCount = -1; // -1 == unlimited
         int mineCount = -1;    // -1 == unlimited
         int sonarRange = 0;
@@ -1032,6 +1008,9 @@ public class Dudly {
         int torpedoRange = 0;
         int reactorDamage = 0;
         int surfaceTurnsRemaining = 0;
+        boolean maxSonarCharge = false;
+        boolean maxSprintCharge = false;
+        boolean maxTorpedoCharge = false;
 
         SubmarineInfoMessage(String message) throws Exception {
             super("I", "submarine info", 6, message);
@@ -1047,16 +1026,24 @@ public class Dudly {
                     throw new IllegalArgumentException(String.format("invalid submarine info message: %s", message));
                 } else if ("shields".equals(var[0])) {
                     shieldCount = Integer.parseInt(var[1]);
+                } else if ("size".equals(var[0])) {
+                    size = Integer.parseInt(var[1]);
                 } else if ("torpedos".equals(var[0])) {
                     torpedoCount = Integer.parseInt(var[1]);
                 } else if ("mines".equals(var[0])) {
                     mineCount = Integer.parseInt(var[1]);
                 } else if ("sonar_range".equals(var[0])) {
                     sonarRange = Integer.parseInt(var[1]);
+                } else if ("max_sonar".equals(var[0])) {
+                    maxSonarCharge = "1".equals(var[1]);
                 } else if ("sprint_range".equals(var[0])) {
                     sprintRange = Integer.parseInt(var[1]);
+                } else if ("max_sprint".equals(var[0])) {
+                    maxSprintCharge = "1".equals(var[1]);
                 } else if ("torpedo_range".equals(var[0])) {
                     torpedoRange = Integer.parseInt(var[1]);
+                } else if ("max_torpedo".equals(var[0])) {
+                    maxTorpedoCharge = "1".equals(var[1]);
                 } else if ("mine_ready".equals(var[0])) {
                     mineReady = (Integer.parseInt(var[1]) == 1);
                 } else if ("surface_remain".equals(var[0])) {

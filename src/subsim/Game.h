@@ -35,6 +35,8 @@ private: // variables
   std::list<UniqueCommand> commands;
   std::list<SubmarinePtr> nuclearDetonations;
   std::list<std::pair<Coordinate, unsigned>> detonations;
+  std::map<unsigned, std::list<std::pair<unsigned, unsigned>>> spotted;
+  std::map<unsigned, std::map<unsigned, unsigned>> sprints;
   std::map<unsigned, std::list<std::pair<Coordinate, unsigned>>> discovered;
   std::map<unsigned, std::map<Coordinate, unsigned>> torpedoHits;
   std::map<unsigned, std::map<Coordinate, unsigned>> mineHits;
@@ -44,8 +46,6 @@ private: // variables
   Timestamp aborted = 0;
   Timestamp finished = 0;
   unsigned turnNumber = 0;
-  unsigned sonarActivations = 0;
-  unsigned sprintActivations = 0;
 
 //-----------------------------------------------------------------------------
 public: // constructors
@@ -105,6 +105,8 @@ private: // methods
   void sendToAll(std::ostream& gameLog, const std::string& message);
   bool sendTo(std::ostream* gameLog, Player&, const std::string& message);
 
+  bool sendSonarDiscoveries(std::ostream& gameLog, Player&);
+  bool sendSprintDetections(std::ostream& gameLog, Player&);
   bool sendDiscoveredObjects(std::ostream& gameLog, Player&);
   bool sendTorpedoHits(std::ostream& gameLog, Player&);
   bool sendMineHits(std::ostream& gameLog, Player&);
