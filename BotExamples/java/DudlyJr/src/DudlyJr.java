@@ -44,6 +44,7 @@ public class DudlyJr {
     private int mapWidth = 0;
     private int mapHeight = 0;
     private int turnNumber = 0;
+    private Direction lastDirection = null;
 
     private DudlyJr(String username, String serverAddress, int serverPort) {
         this.username = username;
@@ -314,7 +315,7 @@ public class DudlyJr {
         Collections.shuffle(directions);
         for (Direction direction : directions) {
             MapSquare square = gameMap.get(from.shifted(direction));
-            if ((square != null) && !square.blocked) {
+            if ((square != null) && !square.blocked && !direction.oppositeOf(lastDirection)) {
                 return direction;
             }
         }
@@ -324,7 +325,7 @@ public class DudlyJr {
         Collections.shuffle(directions);
         for (Direction direction : directions) {
             MapSquare square = gameMap.get(from.shifted(direction));
-            if ((square != null) && !square.blocked) {
+            if ((square != null) && !square.blocked && !direction.oppositeOf(lastDirection)) {
                 return direction;
             }
         }
@@ -339,6 +340,7 @@ public class DudlyJr {
         if (target != null) {
             sendMessage(sub.fireTorpedo(turnNumber, target).toString());
             randomDestination = null;
+            lastDirection = null;
             return;
         }
 
@@ -347,6 +349,7 @@ public class DudlyJr {
                 (sub.sonarRange > (1 + random.nextInt(6))))) {
             sendMessage(sub.ping(turnNumber).toString());
             randomDestination = null;
+            lastDirection = null;
             return;
         }
 
@@ -366,6 +369,7 @@ public class DudlyJr {
         // move toward randomDestination
         Direction direction = getDirectionToward(sub.location, randomDestination);
         sendMessage(sub.move(turnNumber, direction, charge).toString());
+        lastDirection = direction;
     }
 
     private void handleMessage(SonarDetectionMessage message) {
@@ -503,6 +507,19 @@ public class DudlyJr {
         public String toString() {
             return name;
         }
+
+        boolean oppositeOf(Direction dir) {
+            if (dir != null) {
+                switch (dir) {
+                    case North: return this.equals(South);
+                    case East:  return this.equals(West);
+                    case South: return this.equals(North);
+                    case West:  return this.equals(East);
+                }
+            }
+            return false;
+        }
+
     }
 
     enum Equipment {
