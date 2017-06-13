@@ -4,7 +4,9 @@ import (
   "os"
   "fmt"
   "strconv"
-  "bots/utils"
+  "math/rand"
+  "bots/quigley/utils"
+  "bots/quigley/messages"
 )
 
 const (
@@ -21,6 +23,13 @@ var (
 )
 
 func main() {
+  defer func() {
+    if err := recover(); err != nil {
+      fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+      os.Exit(1)
+    }
+  }()
+
   name = getStrArg(1, DEFAULT_USERNAME)
   host = getStrArg(2, DEFAULT_SERVER_ADDRESS)
   port = getIntArg(3, DEFAULT_SERVER_PORT)
@@ -48,18 +57,10 @@ func getIntArg(idx int, def int) int {
 }
 
 func login() {
-  fields := conn.Recv()
-  fmt.Println(fields)
-  if (fields[0] != "C") || (len(fields) != 6) {
-    panic("Invalid game configuration message")
-  }
+  config := messages.GameConfig(conn.Recv())
 
-  count, err := strconv.Atoi(fields[5])
-  if (err != nil) || (count < 0) {
-    panic("Invalid custom setting count")
-  }
-
-  for i := 0; i < count; i++ {
+  for i := 0; i < config.CustomSettingsCount; i++ {
+    // TODO properly handle custom settings
     val := conn.Recv()
     fmt.Println(val)
     if val[0] != "V" {
@@ -67,7 +68,11 @@ func login() {
     }
   }
 
-  x, y := 1, 1 // TODO use random start coordinates
+  fmt.Printf("Joining game %q hosted at %q with player name %q\n",
+      config.GameTitle, host, name)
+
+  x := 1 + rand.Intn(config.MapWidth)
+  y := 1 + rand.Intn(config.MapHeight)
   conn.Send(fmt.Sprintf("J|%s|%d|%d", name, x, y))
 
 }
