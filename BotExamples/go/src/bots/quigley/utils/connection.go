@@ -10,6 +10,8 @@ import (
 type Connection struct {
   reader *bufio.Reader
   writer *bufio.Writer
+  LastSend string
+  LastRecv string
 }
 
 func Connect(host string, port int) Connection {
@@ -27,6 +29,7 @@ func Connect(host string, port int) Connection {
 }
 
 func (conn Connection) Send(message string) {
+  conn.LastSend = message
   _, err := conn.writer.WriteString(message + "\n")
   if err != nil {
     panic(err)
@@ -39,6 +42,7 @@ func (conn Connection) Send(message string) {
 
 func (conn Connection) Recv() []string {
   message, err := conn.reader.ReadString('\n')
+  conn.LastRecv = message
   if err != nil {
     panic(err)
   }
@@ -55,4 +59,3 @@ func (conn Connection) Recv() []string {
 
   return fields
 }
-

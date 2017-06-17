@@ -3,77 +3,53 @@ package main
 import (
   "os"
   "fmt"
-  "strconv"
+  "flag"
   "math/rand"
   "bots/quigley/utils"
   "bots/quigley/messages"
 )
 
-const (
-  DEFAULT_USERNAME = "Quigley"
-  DEFAULT_SERVER_ADDRESS = "localhost"
-  DEFAULT_SERVER_PORT = 9555
-)
-
 var (
-  name string
-  host string
-  port int
+  name = flag.String("name", "Quigley", "The player name to use")
+  host = flag.String("host", "localhost", "The game server host address")
+  port = flag.Int("port", 9555, "The game server port")
   conn utils.Connection
 )
 
 func main() {
-  defer func() {
-    if err := recover(); err != nil {
-      fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
-      os.Exit(1)
-    }
-  }()
+  defer errorHandler()
 
-  name = getStrArg(1, DEFAULT_USERNAME)
-  host = getStrArg(2, DEFAULT_SERVER_ADDRESS)
-  port = getIntArg(3, DEFAULT_SERVER_PORT)
-  conn = utils.Connect(host, port)
+  flag.Parse()
+  conn = utils.Connect(*host, *port)
 
   login()
 }
 
-func getStrArg(idx int, def string) string {
-  if len(os.Args) > idx {
-    return os.Args[idx]
+func errorHandler() {
+  if err := recover(); err != nil {
+    fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+    os.Exit(1)
   }
-  return def
-}
-
-func getIntArg(idx int, def int) int {
-  if (len(os.Args) > idx) {
-    val, err := strconv.Atoi(os.Args[idx])
-    if err != nil {
-      panic(err)
-    }
-    return val
-  }
-  return def
 }
 
 func login() {
   config := messages.GameConfig(conn.Recv())
 
   for i := 0; i < config.CustomSettingsCount; i++ {
-    // TODO properly handle custom settings
-    val := conn.Recv()
+    val := messages.CustomSetting(conn.Recv())
+    // TODO handle custom settings
     fmt.Println(val)
-    if val[0] != "V" {
-      panic("Invalid custom setting value")
-    }
   }
 
   fmt.Printf("Joining game %q hosted at %q with player name %q\n",
-      config.GameTitle, host, name)
+      config.GameTitle, *host, *name)
 
   x := 1 + rand.Intn(config.MapWidth)
   y := 1 + rand.Intn(config.MapHeight)
   conn.Send(fmt.Sprintf("J|%s|%d|%d", name, x, y))
 
+  response := messages.JoinResponse(conn.Recv())
+  if response.Name != *name {
+    panic(fmt.Sprintf("Failed to join game: %v", conn.LastRecv))
+  }
 }
-
