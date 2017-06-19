@@ -437,7 +437,7 @@ void
 Server::handlePlayerInput(const int handle) {
   if (!input.readln(handle)) {
     removePlayer(handle);
-    if (game.getPlayerCount() < 1) {
+    if (game.isStarted() && !game.isFinished() && (game.getPlayerCount() < 1)) {
       game.finish();
     }
   } else {

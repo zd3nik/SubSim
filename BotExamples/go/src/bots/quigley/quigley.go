@@ -53,11 +53,10 @@ func configure() {
   config = messages.GameConfig(conn.Recv())
 
   // initialize game state variables
-  gameMap = make(map[int]map[int]int)
   turnNumber = 0
-
-  // pre-populate gameMap with empty values
+  gameMap = make(map[int]map[int]int)
   for x := 0; x < config.MapWidth; x++ {
+    gameMap[x] = make(map[int]int)
     for y := 0; y < config.MapHeight; y++ {
       gameMap[x][y] = 0 // 0 = empty square
     }
@@ -73,7 +72,7 @@ func configure() {
       x, y := val.Int(0), val.Int(1)
       gameMap[x][y] = -1 // -1 = blocked
     default:
-      fmt.Println(val)
+      fmt.Println("CustomSetting     :", val)
     }
   }
 }
@@ -87,7 +86,7 @@ func login() {
     config.MapWidth, config.MapHeight))
 
   coord := utils.RandomCoordinate(config.MapWidth, config.MapHeight)
-  conn.Send(fmt.Sprintf("J|%s|%d|%d", name, coord.X, coord.Y))
+  conn.Send(fmt.Sprintf("J|%s|%d|%d", *name, coord.X, coord.Y))
 
   response := messages.JoinResponse(conn.Recv())
   if response.Name != *name {
@@ -121,7 +120,7 @@ func play() {
       gameFinished(messages.GameFinished(fields))
       break // exit the loop
     default:
-      panic(fmt.Sprintf("ERROR: %v", fields))
+      panic(fmt.Sprintf("Unknown message type: %v", fields))
     }
   }
 }

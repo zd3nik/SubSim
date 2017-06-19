@@ -22,7 +22,7 @@ func CustomSetting(fields []string) CustomSettingMessage {
     panic(fmt.Sprintf("Empty setting name: %v", fields))
   }
 
-  msg.Values = fields[1:]
+  msg.Values = fields[2:]
   return msg
 }
 
