@@ -1,24 +1,24 @@
 package messages
 
 import (
-  "fmt"
-  "strings"
+    "fmt"
+    "strings"
 )
 
 type JoinResponseMessage struct {
-  Name string
+    Name string
 }
 
 func JoinResponse(fields []string) JoinResponseMessage {
-  if (len(fields) != 2) || (fields[0] != "J") {
-    panic(fmt.Sprintf("Join response: %v", fields))
-  }
+    if (len(fields) != 2) || (fields[0] != "J") {
+        panic(fmt.Sprintf("Join response: %v", fields))
+    }
 
-  var msg JoinResponseMessage
-  msg.Name = strings.Trim(fields[1], " \t\v\f\r\n")
-  if len(msg.Name) == 0 {
-    panic(fmt.Sprintf("Empty player name: %v", fields))
-  }
+    var msg JoinResponseMessage
+    msg.Name = strings.Trim(fields[1], " \t\v\f\r\n")
+    if len(msg.Name) == 0 {
+        panic(fmt.Sprintf("Empty player name: %v", fields))
+    }
 
-  return msg
+    return msg
 }
