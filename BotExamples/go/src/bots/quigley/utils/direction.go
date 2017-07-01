@@ -11,6 +11,10 @@ const (
     West
 )
 
+func AllDirections() []Direction {
+    return []Direction{North, East, South, West}
+}
+
 func (dir Direction) Name() string {
     switch dir {
     case North:
@@ -21,6 +25,21 @@ func (dir Direction) Name() string {
         return "S"
     case West:
         return "W"
+    default:
+        panic(fmt.Sprintf("Invalid direction value: %d", dir))
+    }
+}
+
+func (dir Direction) Opposite() Direction {
+    switch dir {
+    case North:
+        return South
+    case East:
+        return West
+    case South:
+        return North
+    case West:
+        return East
     default:
         panic(fmt.Sprintf("Invalid direction value: %d", dir))
     }

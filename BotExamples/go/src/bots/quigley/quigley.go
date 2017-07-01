@@ -23,8 +23,8 @@ var (
     conn utils.Connection
 
     config messages.GameConfigMessage
-    sub messages.SubmarineInfoMessage
-    gameMap [][]int
+    mySub messages.SubmarineInfoMessage
+    gameMap []int
     spotted = list.New()
     sprints = list.New()
     detonations = list.New()
@@ -59,12 +59,9 @@ func configure() {
 
     // initialize game state variables
     turnNumber = 0
-    gameMap = make([][]int, config.MapWidth)
-    for x := 0; x < config.MapWidth; x++ {
-        gameMap[x] = make([]int, config.MapHeight)
-        for y := 0; y < config.MapHeight; y++ {
-            gameMap[x][y] = 0 // 0 = empty square
-        }
+    gameMap = make([]int, (config.MapWidth * config.MapHeight))
+    for i, _ := range gameMap {
+        gameMap[i] = 0 // 0 = empty square
     }
 
     // handle custom settings
@@ -75,7 +72,7 @@ func configure() {
             panic(fmt.Sprintf("This bot only supports 1 sub per player"))
         case "Obstacle":
             x, y := val.Int(0), val.Int(1)
-            gameMap[x][y] = BLOCKED
+            gameMap[mapIndex(x, y)] = BLOCKED
         default:
             fmt.Println("CustomSetting     :", val)
         }
@@ -87,7 +84,9 @@ func login() {
     fmt.Println("Server Host:Port  :", fmt.Sprintf("%s:%d", *host, *port))
     fmt.Println("Server Version    :", config.ServerVersion)
     fmt.Println("Game Title        :", config.GameTitle)
-    fmt.Println("Game Map Size     :", fmt.Sprintf("%d x %d", config.MapWidth, config.MapHeight))
+    fmt.Println("Game Map Size     :", fmt.Sprintf("%d x %d",
+                                                   config.MapWidth,
+                                                   config.MapHeight))
 
     coord := utils.RandomCoordinate(config.MapWidth, config.MapHeight)
     conn.Send(fmt.Sprintf("J|%s|%d|%d", *name, coord.X, coord.Y))
@@ -143,12 +142,10 @@ func beginTurn(msg messages.BeginTurnMessage) {
     turnNumber = msg.TurnNumber
     issueCommand();
 
-    // clear game map info - it will be re-populated by turn results messages
-    for x := 0; x < config.MapWidth; x++ {
-        for y := 0; y < config.MapHeight; y++ {
-            if gameMap[x][y] != BLOCKED {
-                gameMap[x][y] = 0
-            }
+    // clear game map info - it will be re-populated by next turn result msg
+    for i, val := range gameMap {
+        if val != BLOCKED {
+            gameMap[i] = 0
         }
     }
 
@@ -187,14 +184,15 @@ func mineHit(msg messages.MineHitMessage) {
 
 func discoveredObject(msg messages.DiscoveredObjectMessage) {
     checkTurnNumber(msg.TurnNumber)
-    if gameMap[msg.X][msg.Y] != BLOCKED {
-        gameMap[msg.X][msg.Y] = msg.Size
+    idx := mapIndex(msg.X, msg.Y)
+    if (msg.Size >= 100) && (gameMap[idx] != BLOCKED) {
+        gameMap[idx] = msg.Size
     }
 }
 
 func submarineInfo(msg messages.SubmarineInfoMessage) {
     checkTurnNumber(msg.TurnNumber)
-    sub = msg
+    mySub = msg
 }
 
 func playerScore(msg messages.PlayerScoreMessage) {
@@ -203,60 +201,213 @@ func playerScore(msg messages.PlayerScoreMessage) {
 }
 
 func gameFinished(msg messages.GameFinishedMessage) {
-    fmt.Println("game finished")
+    fmt.Println("game", msg.Status)
     for i := 0; i < msg.PlayerCount; i++ {
         player := messages.PlayerResult(conn.Recv())
         fmt.Printf("  %s score = %d\n", player.Name, player.Score)
     }
 }
 
-func getTorpedoTarget() utils.Coordinate {
-    return utils.Coordinate{1,1} // TODO
-}
-
-func getDirectionToward(from, to utils.Coordinate) utils.Direction {
-    return utils.North // TODO
-}
-
-//-------------------------------------------------------------------------
-// this is where all the A.I. is
-//-------------------------------------------------------------------------
 func issueCommand() {
     // always shoot at stuff when we can!
     target := getTorpedoTarget()
     if target.Good() {
-        conn.Send(fmt.Sprintf("F|%d|%d|%d|%d", turnNumber, sub.SubId,
-            target.X, target.Y))
+        conn.Send(fmt.Sprintf("F|%d|%d|%d|%d", turnNumber, mySub.SubId,
+                              target.X, target.Y))
         randomDestination.Clear()
         return
     }
 
     // do sonar ping?
-    if sub.MaxSonarCharge || ((spotted.Len() == 0) &&
-        (sub.TorpedoRange >= sub.SonarRange) &&
-        (sub.SonarRange > rand.Intn(20))) {
-        conn.Send(fmt.Sprintf("P|%d|%d", turnNumber, sub.SubId))
+    if mySub.MaxSonarCharge || ((spotted.Len() == 0) &&
+                                (mySub.TorpedoRange >= mySub.SonarRange) &&
+                                (mySub.SonarRange > 10 + rand.Intn(20))) {
+        conn.Send(fmt.Sprintf("P|%d|%d", turnNumber, mySub.SubId))
         randomDestination.Clear()
         return
     }
 
     // pick an item to charge
     var charge string
-    if sub.MaxTorpedoCharge || (sub.Torpedos == 0) || (rand.Intn(100) < 50) {
+    if mySub.MaxTorpedoCharge || (mySub.Torpedos == 0) || (rand.Intn(10) < 5) {
         charge = "Sonar"
     } else {
         charge = "Torpedo"
     }
 
     // pick a new random destination square?
-    for randomDestination.Bad() || randomDestination.Equals(sub.X, sub.Y) {
+    // TODO prefer destination to be away from enemies and center of map
+    mySubCoord := utils.Coordinate{mySub.X, mySub.Y}
+    for randomDestination.Bad() || randomDestination.SameAs(mySubCoord) {
         randomDestination = utils.RandomCoordinate(config.MapWidth,
-         config.MapHeight)
+                                                   config.MapHeight)
     }
 
     // move toward randomDestination
-    dir := getDirectionToward(utils.Coordinate{sub.X, sub.Y}, randomDestination)
-    conn.Send(fmt.Sprintf("M|%d|%d|%s|%s", turnNumber, sub.SubId,
-        dir.Name(), charge))
+    dir := getDirectionToward(mySubCoord, randomDestination)
+    conn.Send(fmt.Sprintf("M|%d|%d|%s|%s", turnNumber, mySub.SubId,
+                          dir.Name(), charge))
     lastDirection = dir
+}
+
+func getTorpedoTarget() utils.Coordinate {
+    // initialize target to invalid coordinate
+    target := utils.Coordinate{}
+
+    // exit immediately if insufficient torpedo charge
+    if mySub.TorpedoRange < 2 {
+        return target
+    }
+
+    // get map of squares within torpedo range
+    mySubCoord := utils.Coordinate{mySub.X, mySub.Y}
+    squares := squaresInRangeOf(mySubCoord, mySub.TorpedoRange)
+
+    // set target to an enemy occupied square within torpedo range
+    size := 0 // pick the square with the largest occupied size
+    for i, dist := range squares { // dist = "range" distance
+        if (dist > 1) && (gameMap[i] > size) {
+            coord := mapCoordinate(i)
+            if blastDistance(mySubCoord, coord) > 1 { // check "blast" distance
+                size = gameMap[i]
+                target = coord
+            }
+        }
+    }
+
+    return target
+}
+
+func squaresInRangeOf(from utils.Coordinate, maxRange int) map[int]int {
+    i := mapIndex(from.X, from.Y)
+    dests := make(map[int]int) // [mapIndex]dist
+    dests[i] = 0
+    if maxRange > 0 {
+        addDestinations(dests, from, 1, maxRange)
+    }
+    return dests
+}
+
+func addDestinations(dests map[int]int, from utils.Coordinate,
+                     distance int, maxRange int) {
+    next := make([]utils.Coordinate, 0, 4)
+    for _, dir := range utils.AllDirections() {
+        to := from.Shifted(dir)
+        idx := toMapIndex(to.X, to.Y)
+        if (idx >= 0) && (gameMap[idx] != BLOCKED) {
+            previousDist, exists := dests[idx]
+            if (distance < previousDist) || (exists == false) {
+                dests[idx] = distance
+                if gameMap[idx] <= 0 {
+                    next = append(next, to)
+                }
+            }
+        }
+    }
+
+    if distance < maxRange {
+        for _, coord := range next {
+            addDestinations(dests, coord, distance + 1, maxRange)
+        }
+    }
+}
+
+func blastDistance(from, to utils.Coordinate) int {
+    // call mapIndex to verify input coordinates are valid
+    mapIndex(from.X, from.Y)
+    mapIndex(to.X, to.Y)
+
+    // now calculate blast distance
+    xDiff := math.Abs(float64(from.X - to.X))
+    yDiff := math.Abs(float64(from.Y - to.Y))
+    return int(math.Max(xDiff, yDiff))
+}
+
+func getDirectionToward(from, to utils.Coordinate) utils.Direction {
+    if from.SameAs(to) {
+        panic("getDirectionToward() coordinates are the same")
+    }
+
+    // call mapIndex to verify input coordinates are valid
+    mapIndex(from.X, from.Y)
+    mapIndex(to.X, to.Y)
+
+    // get intended directions using very naive approach
+    directions := make([]utils.Direction, 0, 4)
+    if (to.X == from.X) {
+        if (to.Y < from.Y) {
+            directions = append(directions, utils.North)
+        } else {
+            directions = append(directions, utils.South)
+        }
+    } else if (to.Y == from.Y) {
+        if (to.X < from.X) {
+            directions = append(directions, utils.West)
+        } else {
+            directions = append(directions, utils.East)
+        }
+    } else {
+        if (to.X < from.X) {
+            directions = append(directions, utils.West)
+        } else {
+            directions = append(directions, utils.East)
+        }
+        if (to.Y < from.Y) {
+            directions = append(directions, utils.North)
+        } else {
+            directions = append(directions, utils.South)
+        }
+    }
+
+    // pick randomly from directions list
+    for tries := 0; tries < 2; tries++ {
+        for _, v := range rand.Perm(len(directions)) {
+            dir := directions[v]
+            coord := from.Shifted(dir)
+            if coord.Good() && (dir.Opposite() != lastDirection) &&
+               (gameMap[mapIndex(coord.X, coord.Y)] != BLOCKED) {
+                return dir
+            }
+        }
+
+        // none of the intended directions can be moved to
+        // pick randomly from all possible directions instead
+        directions = utils.AllDirections();
+    }
+
+    // it should not be possible to get here!
+    panic(fmt.Sprintf("No legal direction to from from square %d|%d",
+                      from.X, from.Y))
+}
+
+func mapIndex(x, y int) int {
+    i := toMapIndex(x, y)
+    if i < 0 {
+        panic(fmt.Sprintf("Illegal map coordinates: %d, %d", x, y))
+    }
+    return i
+}
+
+func toMapIndex(x, y int) int {
+    if (x < 1) || (x > config.MapWidth) || (y < 1) || (y > config.MapHeight) {
+        return -1
+    }
+    return (x - 1) + ((y - 1) * config.MapWidth)
+}
+
+func mapCoordinate(i int) utils.Coordinate {
+    coord := toMapCoordinate(i)
+    if coord.Bad() {
+        panic(fmt.Sprintf("Illegal map index: %d", i))
+    }
+    return coord
+}
+
+func toMapCoordinate(i int) utils.Coordinate {
+    if (i < 0) || (i >= len(gameMap)) {
+        return utils.Coordinate{}
+    }
+    x := (i % config.MapWidth) + 1
+    y := (i / config.MapWidth) + 1
+    return utils.Coordinate{x, y}
 }
