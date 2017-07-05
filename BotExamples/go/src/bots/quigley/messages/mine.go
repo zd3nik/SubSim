@@ -20,7 +20,7 @@ func MineHit(fields []string) MineHitMessage {
     var msg MineHitMessage
     var err error
     msg.TurnNumber, err = strconv.Atoi(fields[1])
-    if (err != nil) || (msg.TurnNumber < 1) {
+    if (err != nil) || (msg.TurnNumber < 0) {
         panic(fmt.Sprintf("Invalid turn number: %v", fields))
     }
 

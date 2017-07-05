@@ -36,7 +36,7 @@ func SubmarineInfo(fields []string) SubmarineInfoMessage {
     var msg SubmarineInfoMessage
     var err error
     msg.TurnNumber, err = strconv.Atoi(fields[1])
-    if (err != nil) || (msg.TurnNumber < 1) {
+    if (err != nil) || (msg.TurnNumber < 0) {
         panic(fmt.Sprintf("Invalid turn number: %v", fields))
     }
 
@@ -55,13 +55,13 @@ func SubmarineInfo(fields []string) SubmarineInfoMessage {
         panic(fmt.Sprintf("Invalid Y coordinate: %v", fields))
     }
 
-    val, err := strconv.Atoi(fields[4])
+    val, err := strconv.Atoi(fields[5])
     msg.Active = (val == 1)
     if (err != nil) || ((val != 0) && (val != 1)) {
         panic(fmt.Sprintf("Invalid active flag: %v", fields))
     }
 
-    for _, fld := range fields[5:] {
+    for _, fld := range fields[6:] {
         flds := strings.Split(strings.Trim(fld, " \t\v\f\r\n"), "=")
         if len(flds) != 2 {
             panic(fmt.Sprintf("Invalid field %q: %v", fld, fields))

@@ -332,52 +332,58 @@ func getDirectionToward(from, to utils.Coordinate) utils.Direction {
     mapIndex(from.X, from.Y)
     mapIndex(to.X, to.Y)
 
-    // get intended directions using very naive approach
-    directions := make([]utils.Direction, 0, 4)
-    if (to.X == from.X) {
-        if (to.Y < from.Y) {
-            directions = append(directions, utils.North)
-        } else {
-            directions = append(directions, utils.South)
-        }
-    } else if (to.Y == from.Y) {
-        if (to.X < from.X) {
-            directions = append(directions, utils.West)
-        } else {
-            directions = append(directions, utils.East)
-        }
-    } else {
-        if (to.X < from.X) {
-            directions = append(directions, utils.West)
-        } else {
-            directions = append(directions, utils.East)
-        }
-        if (to.Y < from.Y) {
-            directions = append(directions, utils.North)
-        } else {
-            directions = append(directions, utils.South)
+    // get list of all directions
+    dirs := utils.AllDirections()
+
+    // move intended direction(s) to front of directions list
+    n := 0
+    if to.X < from.X {
+        n = swapElements(dirs, n, utils.West)
+    } else if to.X > from.X {
+        n = swapElements(dirs, n, utils.East)
+    }
+    if to.Y < from.Y {
+        n = swapElements(dirs, n, utils.North)
+    } else if to.Y > from.Y {
+        n = swapElements(dirs, n, utils.South)
+    }
+
+    // randomize if more than one intended direction
+    if (n > 1) && (rand.Intn(10) < 5) {
+        dirs[0], dirs[1] = dirs[1], dirs[0]
+    }
+
+    // randomize remaining directions
+    for last := len(dirs) - 1; n < last; n++ {
+        if rand.Intn(10) < 5 {
+            dirs[n], dirs[last] = dirs[last], dirs[n]
         }
     }
 
-    // pick randomly from directions list
-    for tries := 0; tries < 2; tries++ {
-        for _, v := range rand.Perm(len(directions)) {
-            dir := directions[v]
-            coord := from.Shifted(dir)
-            if coord.Good() && (dir.Opposite() != lastDirection) &&
-               (gameMap[mapIndex(coord.X, coord.Y)] != BLOCKED) {
-                return dir
-            }
+    // return first legal direction from the list
+    for _, dir := range dirs {
+        coord := from.Shifted(dir)
+        if coord.Good() && (dir.Opposite() != lastDirection) &&
+           (gameMap[mapIndex(coord.X, coord.Y)] != BLOCKED) {
+            return dir
         }
-
-        // none of the intended directions can be moved to
-        // pick randomly from all possible directions instead
-        directions = utils.AllDirections();
     }
 
     // it should not be possible to get here!
-    panic(fmt.Sprintf("No legal direction to from from square %d|%d",
+    panic(fmt.Sprintf("No legal direction to move from square %d|%d",
                       from.X, from.Y))
+}
+
+func swapElements(dirs []utils.Direction, idx int, dir utils.Direction) int {
+    for i := idx; i < len(dirs); i++ {
+        if dirs[i] == dir {
+            if i != idx {
+                dirs[idx], dirs[i] = dirs[i], dirs[idx]
+            }
+            return idx + 1
+        }
+    }
+    return idx
 }
 
 func mapIndex(x, y int) int {

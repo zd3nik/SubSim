@@ -12,7 +12,7 @@ type PlayerResultMessage struct {
 }
 
 func PlayerResult(fields []string) PlayerResultMessage {
-    if (len(fields) != 3) || (fields[0] != "F") {
+    if (len(fields) != 3) || (fields[0] != "P") {
         panic(fmt.Sprintf("Invalid player result message: %v", fields))
     }
 
