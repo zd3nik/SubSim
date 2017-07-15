@@ -34,6 +34,10 @@ func SubmarineInfo(fields []string) SubmarineInfoMessage {
     }
 
     var msg SubmarineInfoMessage
+    msg.Size = 100
+    msg.Torpedos = -1
+    msg.Mines = -1
+
     var err error
     msg.TurnNumber, err = strconv.Atoi(fields[1])
     if (err != nil) || (msg.TurnNumber < 0) {

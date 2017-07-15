@@ -1,10 +1,15 @@
 package utils
 
 import (
+    "os"
     "fmt"
     "net"
     "bufio"
     "strings"
+)
+
+var (
+    Debug bool = (os.Getenv("DEBUG") == "1")
 )
 
 type Connection struct {
@@ -34,9 +39,14 @@ func (conn Connection) Send(message string) {
     if err != nil {
         panic(err)
     }
+
     err = conn.writer.Flush()
     if err != nil {
         panic(err)
+    }
+
+    if Debug {
+        fmt.Println("SEND:", message)
     }
 }
 
@@ -50,6 +60,10 @@ func (conn Connection) Recv() []string {
     trimmed := strings.Trim(message, " \t\v\f\r\n")
     if len(trimmed) == 0 {
         panic("utils.Recv() no data from server")
+    }
+
+    if Debug {
+        fmt.Println("RECV:", trimmed)
     }
 
     fields := strings.Split(trimmed, "|")
