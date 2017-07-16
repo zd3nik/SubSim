@@ -58,7 +58,7 @@ The default value of a setting is assumed when no custom setting message is prov
 Game Map
 --------
 
-The game map is a rectangular grid of squares arranged as `width` columns and `height` rows.  Column and row numbers begin at 1.  In the small map below, square 1|1 is the north-west (top-left) corner and square 5|5 is the south-east (bottom-right) corder.  And starting from square 3|3, one square north is 3|2, one square south is 3|4, one square west is 2|2, and one square east is 4|3.
+The game map is a rectangular grid of squares arranged as `width` columns and `height` rows.  Column and row numbers begin at 1.  In the small map below, square 1|1 is the north-west (top-left) corner and square 5|5 is the south-east (bottom-right) corder.  And starting from square 3|3, one square north is 3|2, one square south is 3|4, one square west is 2|3, and one square east is 4|3.
 
       1 2 3 4 5
     1 . . . . .
