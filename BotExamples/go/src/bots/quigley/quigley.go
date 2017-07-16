@@ -25,6 +25,7 @@ var (
     config messages.GameConfigMessage
     mySub messages.SubmarineInfoMessage
     gameMap []int
+    spottedMinRange = 999999
     spotted = list.New()
     sprints = list.New()
     detonations = list.New()
@@ -89,7 +90,7 @@ func login() {
                                                    config.MapWidth,
                                                    config.MapHeight))
 
-    coord := utils.RandomCoordinate(config.MapWidth, config.MapHeight)
+    coord := randomCoordinate()
     conn.Send(fmt.Sprintf("J|%s|%d|%d", *name, coord.X, coord.Y))
 
     response := messages.JoinResponse(conn.Recv())
@@ -122,7 +123,7 @@ func play() {
             playerScore(messages.PlayerScore(fields))
         case "F":
             gameFinished(messages.GameFinished(fields))
-            break // exit the loop
+            return
         default:
             panic(fmt.Sprintf("Unknown message type: %v", fields))
         }
@@ -151,6 +152,7 @@ func beginTurn(msg messages.BeginTurnMessage) {
     }
 
     // clear other game state variables
+    spottedMinRange++
     spotted = list.New()
     sprints = list.New()
     detonations = list.New()
@@ -161,6 +163,9 @@ func beginTurn(msg messages.BeginTurnMessage) {
 func sonarDiscovery(msg messages.SonarDiscoveryMessage) {
     checkTurnNumber(msg.TurnNumber)
     spotted.PushBack(msg)
+    if msg.Range < spottedMinRange {
+        spottedMinRange = msg.Range
+    }
 }
 
 func sprintActivations(msg messages.SprintActivationsMessage) {
@@ -175,6 +180,10 @@ func detonation(msg messages.DetonationMessage) {
 
 func torpedoHit(msg messages.TorpedoHitMessage) {
     checkTurnNumber(msg.TurnNumber)
+    if !*debugMode {
+        fmt.Printf("    Hit at %d|%d, damage=%d\n",
+                   msg.X, msg.Y, msg.Damage)
+    }
     torpedoHits.PushBack(msg)
 }
 
@@ -213,6 +222,9 @@ func issueCommand() {
     // always shoot at stuff when we can!
     target := getTorpedoTarget()
     if target.Good() {
+        if !*debugMode {
+            fmt.Println("  Firing torpedo")
+        }
         conn.Send(fmt.Sprintf("F|%d|%d|%d|%d", turnNumber, mySub.SubId,
                               target.X, target.Y))
         randomDestination.Clear()
@@ -220,9 +232,16 @@ func issueCommand() {
     }
 
     // do sonar ping?
+    thresh := 10 + rand.Intn(len(gameMap) / 40)
+    if spottedMinRange < thresh {
+        thresh = spottedMinRange
+    }
     if mySub.MaxSonarCharge || ((spotted.Len() == 0) &&
                                 (mySub.TorpedoRange >= mySub.SonarRange) &&
-                                (mySub.SonarRange > 10 + rand.Intn(10))) {
+                                (mySub.SonarRange >= thresh)) {
+        if !*debugMode {
+            fmt.Println("Pinging with range of", mySub.SonarRange)
+        }
         conn.Send(fmt.Sprintf("P|%d|%d", turnNumber, mySub.SubId))
         randomDestination.Clear()
         return
@@ -230,19 +249,17 @@ func issueCommand() {
 
     // pick an item to charge
     var charge string
-    if mySub.MaxTorpedoCharge || (mySub.Torpedos == 0) || (rand.Intn(10) < 4) {
+    if mySub.MaxTorpedoCharge || (mySub.Torpedos == 0) ||
+       (mySub.TorpedoRange > mySub.SonarRange) {
         charge = "Sonar"
     } else {
         charge = "Torpedo"
     }
 
     // pick a new random destination square?
-    // TODO prefer destination to be away from enemies and center of map
     mySubCoord := utils.Coordinate{mySub.X, mySub.Y}
-    for randomDestination.Bad() || randomDestination.SameAs(mySubCoord) ||
-        isCentral(randomDestination) || isOnMapEdge(randomDestination) {
-        randomDestination = utils.RandomCoordinate(config.MapWidth,
-                                                   config.MapHeight)
+    for randomDestination.Bad() || randomDestination.SameAs(mySubCoord) {
+        randomDestination = randomCoordinate()
     }
 
     // move toward randomDestination
@@ -252,26 +269,27 @@ func issueCommand() {
     lastDirection = dir
 }
 
+func randomCoordinate() utils.Coordinate {
+    coord := utils.RandomCoordinate(config.MapWidth, config.MapHeight)
+    for (gameMap[mapIndex(coord.X, coord.Y)] == BLOCKED) ||
+        isOnMapEdge(coord) || isCentral(coord) {
+        coord = utils.RandomCoordinate(config.MapWidth, config.MapHeight)
+    }
+    return coord
+}
+
 func isCentral(coord utils.Coordinate) bool {
     x := math.Abs((float64(config.MapWidth) / 2) - float64(coord.X))
     y := math.Abs((float64(config.MapHeight) / 2) - float64(coord.Y))
     xMin := float64(config.MapWidth) / 4
     yMin := float64(config.MapHeight) / 4
-    result := (x <= xMin) && (y <= yMin)
-    if *debugMode && result {
-        fmt.Printf("Central coordinate: %d x %d\n", coord.X, coord.Y)
-    }
-    return result
+    return (x <= xMin) && (y <= yMin)
 }
 
 func isOnMapEdge(coord utils.Coordinate) bool {
-    result := (coord.X < 2) || (coord.Y < 2) ||
-              (coord.X > (config.MapWidth - 3)) ||
-              (coord.Y > (config.MapHeight - 3))
-    if *debugMode && result {
-        fmt.Printf("Edge coordinate: %d x %d\n", coord.X, coord.Y)
-    }
-    return result
+    return (coord.X < 2) || (coord.Y < 2) ||
+           (coord.X > (config.MapWidth - 3)) ||
+           (coord.Y > (config.MapHeight - 3))
 }
 
 func getTorpedoTarget() utils.Coordinate {
@@ -390,12 +408,10 @@ func getDirectionToward(from, to utils.Coordinate) utils.Direction {
         coord := from.Shifted(dir)
         if coord.Good() && (dir.Opposite() != lastDirection) &&
            (gameMap[mapIndex(coord.X, coord.Y)] != BLOCKED) {
-            if isCentral(coord) {
-                if altDir == -1 {
-                    altDir = dir
-                }
-            } else {
+            if !isCentral(coord) {
                 return dir
+            } else if altDir == -1 {
+                altDir = dir
             }
         }
     }

@@ -47,7 +47,7 @@ func (coord *Coordinate) SameAs(other Coordinate) bool {
 }
 
 func (coord *Coordinate) Good() bool {
-    return (coord.X > 0) || (coord.Y > 0)
+    return (coord.X > 0) && (coord.Y > 0)
 }
 
 func (coord *Coordinate) Bad() bool {
