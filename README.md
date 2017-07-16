@@ -152,7 +152,7 @@ Players must submit exactly one command per active submarine (owned by them) per
     Surface  |  Surface the submarine at its current square and remain there for 3 turns to repair
              |  one shield.  The shield is repaired at the end of the 3rd turn.
              |
-             |  This will not increase the submarine shiled count beyond its maximum.  So it does
+             |  This will not increase the submarine shield count beyond its maximum.  So it does
              |  nothing if the submarine shield count is already at the maximum.
              |
              |  The submarine is not visible to sonar while it is surfaced.  But you cannot move,
