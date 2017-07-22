@@ -36,7 +36,7 @@ Thumbs.db
 /.qmake.cache
 /.qmake.stash
 grip/
-build*
+build*/
 
 # intellij
 .idea/
