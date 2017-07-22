@@ -5,6 +5,18 @@ This is a multi-player submarine battle simulator that supports 2 or more player
 
 Each player has one or more submarines that begin at a position of their choice on the game map.  The game map consists of multiple squares arranged in a grid of rows and columns.  All squares of the game map begin empty or containing a permanent obstacle.  During the game empty squares may become occupied by one or more mobile objects - such as submarines.  But squares containing obstacles cannot become occupied by mobile objects.
 
+How to Build
+------------
+
+Run these commands starting at the root SubSim directory (the directory that contains this README.md file):
+
+    mkdir build
+    cd build
+    cmake ..
+    make
+
+This should produce a subsim-server binary file.  Run `./subsum-server -h` for usage help.
+
 Game Objective
 --------------
 
