@@ -3,6 +3,8 @@ Submarine Battle Simulator
 
 This is a multi-player submarine battle simulator that supports 2 or more players per game.
 
+It is intended mainly for `bot` (e.g. robot) competition.  The game mechanics are not suitable for (fun) human play.  The game mechanics are meant to be simple enough that writing a bot to play the game is easy, but writing a bot that can play the game consistently better than other bots is difficult.  See the [BotExamples](BotExamples) directory for some example bots.
+
 Each player has one or more submarines that begin at a position of their choice on the game map.  The game map consists of multiple squares arranged in a grid of rows and columns.  All squares of the game map begin empty or containing a permanent obstacle.  During the game empty squares may become occupied by one or more mobile objects - such as submarines.  But squares containing obstacles cannot become occupied by mobile objects.
 
 How to Build
