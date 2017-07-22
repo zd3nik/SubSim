@@ -405,13 +405,15 @@ func getDirectionToward(from, to utils.Coordinate) utils.Direction {
     // return first legal direction from the list
     var altDir utils.Direction = -1
     for _, dir := range dirs {
-        coord := from.Shifted(dir)
-        if coord.Good() && (dir.Opposite() != lastDirection) &&
-           (gameMap[mapIndex(coord.X, coord.Y)] != BLOCKED) {
-            if !isCentral(coord) {
-                return dir
-            } else if altDir == -1 {
-                altDir = dir
+        if dir.Opposite() != lastDirection {
+            coord := from.Shifted(dir)
+            idx := toMapIndex(coord.X, coord.Y)
+            if (idx >= 0) && (gameMap[idx] != BLOCKED) {
+                if !isCentral(coord) {
+                    return dir
+                } else if altDir == -1 {
+                    altDir = dir
+                }
             }
         }
     }

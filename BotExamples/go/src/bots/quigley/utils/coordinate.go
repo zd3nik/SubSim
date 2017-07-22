@@ -11,7 +11,12 @@ type Coordinate struct {
 }
 
 func RandomCoordinate(maxX, maxY int) Coordinate {
-    return Coordinate{1 + rand.Intn(maxX), 1 + rand.Intn(maxY)}
+    coord := Coordinate{1 + rand.Intn(maxX), 1 + rand.Intn(maxY)}
+    for (coord.X > maxX) || (coord.Y > maxY) || (coord.X < 1) || (coord.Y < 1) {
+        fmt.Printf("Invalid coordinate generated: %d|%d\n", coord.X, coord.Y)
+        coord = Coordinate{1 + rand.Intn(maxX), 1 + rand.Intn(maxY)}
+    }
+    return coord
 }
 
 func (coord *Coordinate) Clear() {
