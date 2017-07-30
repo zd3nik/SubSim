@@ -368,6 +368,10 @@ public class Dudly {
     }
 
     private void issueCommand(Submarine sub) throws Exception {
+        if (sub.dead) {
+            return;
+        }
+
         // always shoot at stuff when we can!
         Coordinate target = getTorpedoTarget(sub);
         if (target != null) {

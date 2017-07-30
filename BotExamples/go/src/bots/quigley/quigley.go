@@ -219,6 +219,10 @@ func gameFinished(msg messages.GameFinishedMessage) {
 }
 
 func issueCommand() {
+    if mySub.Dead {
+        return
+    }
+
     // always shoot at stuff when we can!
     target := getTorpedoTarget()
     if target.Good() {
