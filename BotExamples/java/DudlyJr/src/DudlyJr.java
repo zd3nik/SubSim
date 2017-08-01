@@ -335,7 +335,7 @@ public class DudlyJr {
     }
 
     private void issueCommand(Submarine sub) throws Exception {
-        if (sub.dead) {
+        if (!sub.active) {
             return;
         }
 
@@ -403,7 +403,9 @@ public class DudlyJr {
     private void handleMessage(SubmarineInfoMessage message) {
         checkTurnNumber(message);
         mySub.update(message);
-        gameMap.get(mySub.location).foreignObjectSize -= mySub.size;
+        if (!mySub.dead) {
+            gameMap.get(mySub.location).foreignObjectSize -= mySub.size;
+        }
     }
 
     private void handleMessage(PlayerScoreMessage message) {

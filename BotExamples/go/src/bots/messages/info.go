@@ -50,12 +50,12 @@ func SubmarineInfo(fields []string) SubmarineInfoMessage {
     }
 
     msg.X, err = strconv.Atoi(fields[3])
-    if (err != nil) || (msg.X < 1) {
+    if (err != nil) {
         panic(fmt.Sprintf("Invalid X coordinate: %v", fields))
     }
 
     msg.Y, err = strconv.Atoi(fields[4])
-    if (err != nil) || (msg.Y < 1) {
+    if (err != nil) {
         panic(fmt.Sprintf("Invalid Y coordinate: %v", fields))
     }
 

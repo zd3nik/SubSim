@@ -314,7 +314,7 @@ func updateDistanceTo(from utils.Coordinate, distance int) {
 }
 
 func issueCommand() {
-    if mySub.Dead {
+    if !mySub.Active {
         return
     }
 

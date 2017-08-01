@@ -734,6 +734,8 @@ Game::executeTurn(std::ostream& gameLog) {
       if (!sub->isDead()) {
         lastPlayer = player;
         alive++;
+      } else if (sub->getLocation()) {
+        gameMap.removeObject(sub->getLocation(), sub);
       }
     }
   }

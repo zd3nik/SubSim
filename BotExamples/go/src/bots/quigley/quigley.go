@@ -219,7 +219,7 @@ func gameFinished(msg messages.GameFinishedMessage) {
 }
 
 func issueCommand() {
-    if mySub.Dead {
+    if !mySub.Active {
         return
     }
 
