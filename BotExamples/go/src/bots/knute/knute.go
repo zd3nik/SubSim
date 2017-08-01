@@ -22,6 +22,7 @@ var (
     host = flag.String("host", "localhost", "The game server host address")
     port = flag.Int("port", 9555, "The game server port")
     debugMode = flag.Bool("debug", false, "Run in debug mode")
+    minRandDist = flag.Int("mrd", 2, "Minimum random shot distance")
     conn utils.Connection
 
     config messages.GameConfigMessage
@@ -46,7 +47,6 @@ type Square struct {
     rDist int   // distance to randomDestination
     oDist int   // distance + 1 to discovered object
     oAge int    // age of oDist
-    probed bool // temp flag used when updating oDist value
 }
 
 func main() {
@@ -56,6 +56,7 @@ func main() {
 
     flag.Parse()
     utils.Debug = (utils.Debug || *debugMode)
+    fmt.Printf("MinRandDist = %d\n", (*minRandDist))
     conn = utils.Connect(*host, *port)
 
     configure()
@@ -78,7 +79,6 @@ func newSquare(i int) Square {
         rDist: MAX_DIST,
         oDist: 0,
         oAge: 0,
-        probed: false,
     }
 }
 
@@ -184,10 +184,7 @@ func beginTurn(msg messages.BeginTurnMessage) {
 
     // update oDist values
     for i, _ := range gameMap {
-        gameMap[i].probed = false
-    }
-    for i, _ := range gameMap {
-        if gameMap[i].oDist > 0 {
+        if gameMap[i].oDist == 1 {
             updateProb(gameMap[i])
         }
     }
@@ -276,22 +273,25 @@ func gameFinished(msg messages.GameFinishedMessage) {
 }
 
 func updateProb(from Square) {
-    if !from.probed {
-        gameMap[from.idx].oAge++
-        for _, dir := range utils.AllDirections() {
-            to := from.coord.Shifted(dir)
-            idx := toMapIndex(to.X, to.Y)
-            if idx >= 0 {
-                sqr := gameMap[idx]
-                if !sqr.probed && (sqr.size != BLOCKED) {
-                    if sqr.oDist == 0 {
-                        gameMap[idx].oDist = (from.oDist + 1)
-                    }
+    next := make([]int, 0, 4)
+    for _, dir := range utils.AllDirections() {
+        to := from.coord.Shifted(dir)
+        idx := toMapIndex(to.X, to.Y)
+        if idx >= 0 {
+            sqr := gameMap[idx]
+            if (sqr.size != BLOCKED) && (sqr.oAge == (from.oAge - 1)) {
+                if sqr.oDist == 0 {
+                    gameMap[idx].oDist = (from.oDist + 1)
                     gameMap[idx].oAge++
-                    gameMap[idx].probed = true
+                } else {
+                    next = append(next, idx)
                 }
             }
         }
+    }
+    gameMap[from.idx].oAge++
+    for _, idx := range next {
+        updateProb(gameMap[idx])
     }
 }
 
@@ -342,12 +342,12 @@ func issueCommand() {
     if sonarThreshold < thresh {
         thresh = sonarThreshold
     }
-    if (sqr.oDist > 0) && (sqr.oDist <= thresh) && (sqr.oAge < sqr.oDist) {
+    if (sqr.oDist > 0) && (sqr.oDist < thresh) && (sqr.oAge < sqr.oDist) {
         fmt.Printf("- reducing sonar thresh to %d\n", sqr.oDist)
         thresh = sqr.oDist
     }
     if mySub.MaxSonarCharge || ((spotted.Len() == 0) &&
-                                (mySub.TorpedoRange >= (mySub.SonarRange - 2)) &&
+                                (mySub.TorpedoRange >= mySub.SonarRange) &&
                                 (mySub.SonarRange >= thresh)) {
         if !*debugMode {
             fmt.Println("Pinging with range of", mySub.SonarRange)
@@ -422,7 +422,7 @@ func printOAge() {
 
 func randomCoordinate(mySubCoord utils.Coordinate) utils.Coordinate {
     coord := utils.RandomCoordinate(config.MapWidth, config.MapHeight)
-    for coord.SameAs(mySubCoord) || isOnMapEdge(coord) ||
+    for coord.SameAs(mySubCoord) || isOnMapEdge(coord) || isCentral(coord) ||
         (gameMap[mapIndex(coord.X, coord.Y)].size == BLOCKED) {
         coord = utils.RandomCoordinate(config.MapWidth, config.MapHeight)
     }
@@ -435,10 +435,18 @@ func isOnMapEdge(coord utils.Coordinate) bool {
            (coord.Y > (config.MapHeight - 3))
 }
 
+func isCentral(coord utils.Coordinate) bool {
+    x := math.Abs((float64(config.MapWidth) / 2) - float64(coord.X))
+    y := math.Abs((float64(config.MapHeight) / 2) - float64(coord.Y))
+    xMin := float64(config.MapWidth) / 4
+    yMin := float64(config.MapHeight) / 4
+    return (x <= xMin) && (y <= yMin)
+}
+
 func getTorpedoTarget() utils.Coordinate {
     // initialize target to invalid coordinate
     target, size := utils.Coordinate{}, 0
-    alt, oAge := utils.Coordinate{}, 2
+    alt := utils.Coordinate{}
 
     // exit immediately if insufficient torpedo charge
     if mySub.TorpedoRange < 2 {
@@ -460,9 +468,9 @@ func getTorpedoTarget() utils.Coordinate {
                         target, size = s.coord, s.size
                     }
                 }
-                if (s.oDist > 0) && (s.oDist < 3) && (s.oAge <= oAge) {
+                if (dist >= (*minRandDist)) && (s.oDist == 2) && (s.oAge == 1) {
                     if alt.Bad() || (rand.Intn(10) < 4) {
-                        alt, oAge = s.coord, s.oAge
+                        alt = s.coord
                     }
                 }
             }
@@ -472,6 +480,7 @@ func getTorpedoTarget() utils.Coordinate {
     // take shot near recent sonar discovery if no definite target?
     // if target.Bad() && alt.Good() && (rand.Intn(7) < blastDistance(mySubCoord, alt)) {
     if target.Bad() && alt.Good() {
+        fmt.Printf("--- USING ALTERNATE TARGET %d|%d ---\n", alt.X, alt.Y)
         target = alt
     }
 
@@ -539,8 +548,12 @@ func getDirection(from utils.Coordinate) utils.Direction {
         dest := from.Shifted(dir)
         idx := toMapIndex(dest.X, dest.Y)
         if idx >= 0 {
-            dist := gameMap[idx].rDist
-            if gameMap[idx].oAge > 0 {
+            sqr := gameMap[idx]
+            dist := sqr.rDist
+            if sqr.oAge > 0 {
+                dist++
+            }
+            if isCentral(sqr.coord) || isOnMapEdge(sqr.coord) {
                 dist++
             }
             if dist < distance {
