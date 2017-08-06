@@ -46,13 +46,20 @@ Screen::get(const bool update) {
 const char*
 Screen::colorCode(const ScreenColor color) {
   switch (color) {
-  case Red:     return "\033[0;31m";
-  case Green:   return "\033[0;32m";
-  case Yellow:  return "\033[0;33m";
-  case Blue:    return "\033[0;34m";
-  case Magenta: return "\033[0;35m";
-  case Cyan:    return "\033[0;36m";
-  case White:   return "\033[0;37m";
+  case Red:           return "\033[0;31m";
+  case Green:         return "\033[0;32m";
+  case Yellow:        return "\033[0;33m";
+  case Blue:          return "\033[0;34m";
+  case Magenta:       return "\033[0;35m";
+  case Cyan:          return "\033[0;36m";
+  case White:         return "\033[0;37m";
+  case BrightRed:     return "\033[1;31m";
+  case BrightGreen:   return "\033[1;32m";
+  case BrightYellow:  return "\033[1;33m";
+  case BrightBlue:    return "\033[1;34m";
+  case BrightMagenta: return "\033[1;35m";
+  case BrightCyan:    return "\033[1;36m";
+  case BrightWhite:   return "\033[1;37m";
   default:
     break;
   }

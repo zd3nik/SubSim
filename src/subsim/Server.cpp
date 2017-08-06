@@ -565,6 +565,7 @@ Server::printMap(Coordinate& coord) {
     for (auto&& shot : game.shotsFired()) {
       game.getMap().animateShot(topLeft, shot);
     }
+    // TODO animate mine detonations and nuclear detonations
   }
 }
 

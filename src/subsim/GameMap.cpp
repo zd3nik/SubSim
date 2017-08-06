@@ -25,16 +25,16 @@ GameMap::printSquare(Screen& screen, const Square& square) const {
     if (sub) {
       switch (sub->getShieldCount()) {
       case 0:
-        screen << Red << str << DefaultColor;
+        screen << BrightRed << str << DefaultColor;
         break;
       case 1:
-        screen << Yellow << str << DefaultColor;
+        screen << BrightMagenta << str << DefaultColor;
         break;
       case 2:
-        screen << Green << str << DefaultColor;
+        screen << BrightGreen << str << DefaultColor;
         break;
       default:
-        screen << White << str << DefaultColor;
+        screen << BrightWhite << str << DefaultColor;
       }
     } else {
       screen << str;
@@ -56,7 +56,7 @@ GameMap::animateShot(const Coordinate& mapPos, const TorpedoShot& shot) const {
   ASSERT(shot.second.size());
   Screen& screen = Screen::print() << mapPos;
   for (const Coordinate& coord : shot.first) {
-    screen << toScreenCoord(coord) << Blue << "  *" << mapPos << Flush;
+    screen << toScreenCoord(coord) << BrightBlue << "  *" << mapPos << Flush;
     usleep(100000);
     screen << toScreenCoord(coord) << DefaultColor;
     printSquare(screen, getSquare(coord));

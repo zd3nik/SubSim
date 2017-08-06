@@ -21,7 +21,14 @@ enum ScreenColor {
   Blue,
   Magenta,
   Cyan,
-  White
+  White,
+  BrightRed,
+  BrightGreen,
+  BrightYellow,
+  BrightBlue,
+  BrightMagenta,
+  BrightCyan,
+  BrightWhite
 };
 
 //-----------------------------------------------------------------------------
