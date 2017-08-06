@@ -7,6 +7,7 @@
 #include "utils/Platform.h"
 #include "utils/Coordinate.h"
 #include "utils/Rectangle.h"
+#include "utils/Screen.h"
 #include "Object.h"
 #include "Square.h"
 
@@ -15,6 +16,10 @@ namespace subsim
 
 //-----------------------------------------------------------------------------
 class GameMap : public Rectangle {
+//-----------------------------------------------------------------------------
+public: // typedefs
+  typedef std::pair<std::vector<Coordinate>, std::vector<Coordinate>> TorpedoShot;
+
 //-----------------------------------------------------------------------------
 private: // variables
   std::vector<UniqueSquare> squares;
@@ -29,6 +34,7 @@ public: // constructors
 
 //-----------------------------------------------------------------------------
 public: // methods
+  void animateShot(const Coordinate& mapPos, const TorpedoShot& shot) const;
   void print(Coordinate&) const;
   void printSummary(Coordinate&) const;
   void reset(const unsigned width, const unsigned height);
@@ -44,6 +50,10 @@ public: // methods
 
 //-----------------------------------------------------------------------------
 private: // methods
+  void printSquare(Screen& screen, const Square& square) const;
+  void printRow(Screen& screen, const Coordinate& rowCenter) const;
+  void printRow(Screen& screen, const Coordinate& rowCenter,
+                const ScreenColor color, const std::string& str) const;
   void addDestinations(std::map<Coordinate, unsigned>& destinations,
                        const Coordinate& to,
                        const unsigned dist,

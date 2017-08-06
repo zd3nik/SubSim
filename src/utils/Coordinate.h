@@ -102,6 +102,12 @@ public: // methods
     return (*this);
   }
 
+  unsigned blastDistanceTo(const Coordinate& other) const {
+    int xDiff = std::abs(static_cast<int>(x) - static_cast<int>(other.x));
+    int yDiff = std::abs(static_cast<int>(y) - static_cast<int>(other.y));
+    return static_cast<unsigned>(std::max(xDiff, yDiff));
+  }
+
 //-----------------------------------------------------------------------------
 public: // operator overloads
   explicit operator bool() const noexcept { return (x && y); }

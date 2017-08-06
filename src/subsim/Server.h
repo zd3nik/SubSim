@@ -28,6 +28,7 @@ public: // enums
 private: // variables
   bool autoStart = false;
   bool repeat = false;
+  bool animate = false;
   Game game;
   Input input;
   Socket socket;

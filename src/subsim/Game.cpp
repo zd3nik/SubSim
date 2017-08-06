@@ -235,6 +235,14 @@ Game::start(std::ostream& gameLog) {
 
   started = Timer::now();
   turnNumber = 0;
+  torpedoShots.clear();
+  nuclearDetonations.clear();
+  detonations.clear();
+  spotted.clear();
+  sprints.clear();
+  discovered.clear();
+  torpedoHits.clear();
+  mineHits.clear();
   errs.clear();
 
   // send initial info messages
@@ -672,6 +680,7 @@ Game::executeTurn(std::ostream& gameLog) {
     throw Error("Game::executeTurn() turn number has not been initialized!");
   }
 
+  torpedoShots.clear();
   nuclearDetonations.clear();
   detonations.clear();
   spotted.clear();
@@ -923,6 +932,7 @@ Game::exec(SubmarinePtr& sub, const FireCommand& command) {
       PlayerPtr player = getPlayer(static_cast<int>(sub->getPlayerID()));
       if (player) {
         detonationFrom(player, to, TORPEDO, gameMap.getSquare(to));
+        torpedoShots.push_back(getTorpedoShot(dests, sub->getLocation(), to, 1));
       }
     }
     return true;
@@ -1134,6 +1144,48 @@ Game::blastDistance(const Coordinate& from, const Coordinate& to) const {
       : (to.getY() - from.getY());
 
   return std::max<unsigned>(xDiff, yDiff);
+}
+
+//-----------------------------------------------------------------------------
+GameMap::TorpedoShot
+Game::getTorpedoShot(const std::map<Coordinate, unsigned>& dist,
+                     const Coordinate& from, const Coordinate& to,
+                     const unsigned blastRadius) const
+{
+  GameMap::TorpedoShot shot;
+  shot.first.push_back(to);
+  shot.second.push_back(to);
+  for (auto&& blast : getBlastCoordinates(to, blastRadius)) {
+    shot.second.push_back(blast);
+  }
+
+  Coordinate src = to;
+  unsigned distance = ~0U;
+  std::vector<Direction> dirs = {
+    Direction::North,
+    Direction::East,
+    Direction::South,
+    Direction::West
+  };
+
+  while (true) {
+    Coordinate dest;
+    std::random_shuffle(dirs.begin(), dirs.end());
+    for (Direction dir : dirs) {
+      Coordinate coord = (src + dir);
+      if (coord == from) {
+        std::reverse(shot.first.begin(), shot.first.end());
+        return std::move(shot);
+      }
+      if (dist.count(coord) && (dist.at(coord) < distance)) {
+        distance = dist.at(coord);
+        dest = coord;
+      }
+    }
+    ASSERT(gameMap.contains(dest));
+    shot.first.push_back(dest);
+    src = dest;
+  }
 }
 
 //-----------------------------------------------------------------------------

@@ -62,6 +62,7 @@ Server::showHelp() {
       << "SERVER OPTIONS:" << EL
       << "  -a, --auto-start          Auto start game if max players joined" << EL
       << "  -r, --repeat              Repeat game when done" << EL
+      << "  --animate                 Enable animations in map display" << EL
       << EL
       << "DATABASE OPTIONS:" << EL
       << "  -d, --db-dir <dir>        Save game stats to given directory" << EL
@@ -83,6 +84,7 @@ Server::init() {
 
   autoStart = args.has({"-a", "--auto-start"});
   repeat    = args.has({"-r", "--repeat"});
+  animate   = args.has("--animate");
 
   std::string fname = args.getStrAfter({"-g", "--game-log"});
   if (isEmpty(fname)) {
@@ -124,6 +126,9 @@ Server::run() {
       if (waitForInput()) {
         ok = handleUserInput(coord);
       }
+    }
+    if (ok && animate) {
+      printMap(coord.set(1, 1));
     }
 
     printGameInfo(coord.set(1, 1));
@@ -552,8 +557,15 @@ Server::printGameInfo(Coordinate& coord) {
 //-----------------------------------------------------------------------------
 void
 Server::printMap(Coordinate& coord) {
-  Screen::print() << coord << ClearToScreenEnd;
+  Coordinate topLeft(coord);
+  Screen::print() << topLeft; // << ClearToScreenEnd;
   game.getMap().print(coord);
+  if (animate) {
+    Screen::print() << topLeft;
+    for (auto&& shot : game.shotsFired()) {
+      game.getMap().animateShot(topLeft, shot);
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------

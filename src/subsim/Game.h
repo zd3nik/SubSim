@@ -27,10 +27,15 @@ namespace subsim
 //-----------------------------------------------------------------------------
 class Game {
 //-----------------------------------------------------------------------------
+public: // typedefs
+  typedef std::list<GameMap::TorpedoShot> TorpedoShots;
+
+//-----------------------------------------------------------------------------
 private: // variables
   std::string title;
   GameConfig config;
   GameMap gameMap;
+  TorpedoShots torpedoShots;
   std::map<int, PlayerPtr> players;
   std::list<UniqueCommand> commands;
   std::list<SubmarinePtr> nuclearDetonations;
@@ -60,6 +65,7 @@ public: // inline methods
   const std::string& getTitle() const noexcept { return title; }
   const GameConfig& getConfig() const noexcept { return config; }
   const GameMap& getMap() const noexcept { return gameMap; }
+  const TorpedoShots& shotsFired() const noexcept { return torpedoShots; }
 
   bool isAborted() const noexcept { return aborted; }
   bool isFinished() const noexcept { return (aborted || finished); }
@@ -133,6 +139,12 @@ private: // methods
                          const unsigned damage);
 
   unsigned blastDistance(const Coordinate& from, const Coordinate& to) const;
+
+  GameMap::TorpedoShot getTorpedoShot(const std::map<Coordinate, unsigned>&,
+                                      const Coordinate& from,
+                                      const Coordinate& to,
+                                      const unsigned blastRadius) const;
+
   std::vector<Coordinate> getBlastCoordinates(const Coordinate&,
                                               const unsigned range) const;
 };

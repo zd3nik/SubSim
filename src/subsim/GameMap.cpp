@@ -6,54 +6,97 @@
 #include "utils/Error.h"
 #include "utils/Movement.h"
 #include "utils/Msg.h"
-#include "utils/Screen.h"
 
 namespace subsim
 {
 
 //-----------------------------------------------------------------------------
 void
-GameMap::print(Coordinate& coord) const {
-  Screen::print() << coord << "   ";
-  for (unsigned x = 1; x <= getWidth(); ++x) {
-    Screen::print() << rPad(x, 3, ' ');
+GameMap::printSquare(Screen& screen, const Square& square) const {
+  const unsigned count = square.getObjectCount();
+  if (count > 1) {
+    ASSERT(!square.isBlocked());
+    screen << rPad(count, 3, ' ');
+  } else if (count) {
+    const Object* obj = square.begin()->get();
+    const Submarine* sub = dynamic_cast<const Submarine*>(obj);
+    const char ch = obj->getMapChar();
+    const std::string str = rPad(toStr(ch), 3, ' ');
+    if (sub) {
+      switch (sub->getShieldCount()) {
+      case 0:
+        screen << Red << str << DefaultColor;
+        break;
+      case 1:
+        screen << Yellow << str << DefaultColor;
+        break;
+      case 2:
+        screen << Green << str << DefaultColor;
+        break;
+      default:
+        screen << White << str << DefaultColor;
+      }
+    } else {
+      screen << str;
+    }
+  } else {
+    screen << "  .";
   }
-  for (unsigned y = 1; y <= getHeight(); ++y) {
-    Screen::print() << coord.south() << rPad(y, 3, ' ');
-    for (unsigned x = 1; x <= getWidth(); ++x) {
-      const Square& square = getSquare(Coordinate(x, y));
-      const unsigned count = square.getObjectCount();
-      if (count > 1) {
-        ASSERT(!square.isBlocked());
-        Screen::print() << rPad(count, 3, ' ');
-      } else if (count) {
-        const Object* obj = square.begin()->get();
-        const Submarine* sub = dynamic_cast<const Submarine*>(obj);
-        const char ch = obj->getMapChar();
-        const std::string str = rPad(toStr(ch), 3, ' ');
-        if (sub) {
-          switch (sub->getShieldCount()) {
-          case 0:
-            Screen::print() << Red << str << DefaultColor;
-            break;
-          case 1:
-            Screen::print() << Yellow << str << DefaultColor;
-            break;
-          case 2:
-            Screen::print() << Green << str << DefaultColor;
-            break;
-          default:
-            Screen::print() << White << str << DefaultColor;
-          }
-        } else {
-          Screen::print() << str;
-        }
-      } else {
-        Screen::print() << "  .";
+}
+
+//-----------------------------------------------------------------------------
+static Coordinate toScreenCoord(Coordinate coord) {
+  return Coordinate(((coord.getX() * 3) + 1), (coord.getY() + 1));
+}
+
+//-----------------------------------------------------------------------------
+void
+GameMap::animateShot(const Coordinate& mapPos, const TorpedoShot& shot) const {
+  ASSERT(shot.first.size());
+  ASSERT(shot.second.size());
+  Screen& screen = Screen::print() << mapPos;
+  for (const Coordinate& coord : shot.first) {
+    screen << toScreenCoord(coord) << Blue << "  *" << mapPos << Flush;
+    usleep(100000);
+    screen << toScreenCoord(coord) << DefaultColor;
+    printSquare(screen, getSquare(coord));
+  }
+
+  unsigned count = 0;
+  const Coordinate& finalDest = shot.first.back();
+  for (unsigned dist = 0; count < shot.second.size(); ++dist) {
+    for (const Coordinate& coord : shot.second) {
+      if (finalDest.blastDistanceTo(coord) == dist) {
+        screen << toScreenCoord(coord) << Red << "  X";
+        count++;
       }
     }
+    screen << mapPos << Flush;
+    usleep(250000);
   }
-  Screen::print() << coord.south(2);
+  usleep(250000);
+
+  for (Coordinate coord : shot.second) {
+    screen << toScreenCoord(coord) << DefaultColor;
+    printSquare(screen, getSquare(coord));
+  }
+  screen.flush();
+}
+
+//-----------------------------------------------------------------------------
+void
+GameMap::print(Coordinate& coord) const {
+  Screen& screen = Screen::print() << coord << "   ";
+  for (unsigned x = 1; x <= getWidth(); ++x) {
+    screen << rPad(x, 3, ' ');
+  }
+  for (unsigned y = 1; y <= getHeight(); ++y) {
+    screen << coord.south() << rPad(y, 3, ' ');
+    for (unsigned x = 1; x <= getWidth(); ++x) {
+      printSquare(screen, getSquare(Coordinate(x, y)));
+    }
+  }
+  screen << coord.south(2);
 }
 
 //-----------------------------------------------------------------------------
@@ -64,21 +107,21 @@ GameMap::printSummary(Coordinate& coord) const {
     count += square->getObjectCount();
   }
 
-  Screen::print() << coord << "Object Count: " << count;
+  Screen& screen = Screen::print() << coord << "Object Count: " << count;
   if (count) {
     unsigned tmp = 0;
     for (const UniqueSquare& square : squares) {
       for (const ObjectPtr& object : (*square)) {
         if (!object->isPermanent()) {
           if (!tmp++) {
-            Screen::print() << coord.south().setX(4);
+            screen << coord.south().setX(4);
           }
-          Screen::print() << coord.south() << object->toString();
+          screen << coord.south() << object->toString();
         }
       }
     }
     if (tmp) {
-      Screen::print() << coord.south(2).setX(1);
+      screen << coord.south(2).setX(1);
     }
   }
 }
