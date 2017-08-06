@@ -27,8 +27,27 @@ GameMap::print(Coordinate& coord) const {
         ASSERT(!square.isBlocked());
         Screen::print() << rPad(count, 3, ' ');
       } else if (count) {
-        const char ch = (*square.begin())->getMapChar();
-        Screen::print() << rPad(toStr(ch), 3, ' ');
+        const Object* obj = square.begin()->get();
+        const Submarine* sub = dynamic_cast<const Submarine*>(obj);
+        const char ch = obj->getMapChar();
+        const std::string str = rPad(toStr(ch), 3, ' ');
+        if (sub) {
+          switch (sub->getShieldCount()) {
+          case 0:
+            Screen::print() << Red << str << DefaultColor;
+            break;
+          case 1:
+            Screen::print() << Yellow << str << DefaultColor;
+            break;
+          case 2:
+            Screen::print() << Green << str << DefaultColor;
+            break;
+          default:
+            Screen::print() << White << str << DefaultColor;
+          }
+        } else {
+          Screen::print() << str;
+        }
       } else {
         Screen::print() << "  .";
       }
